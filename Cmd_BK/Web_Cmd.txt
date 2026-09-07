@@ -1,0 +1,50 @@
+python3 -m venv .venv
+source .venv/bin/activate
+pip install graphifyy
+graphify install --platform hermes
+
+======================= 
+建立對應團隊指令
+
+hermes profile create jl_lead --clone
+hermes profile create jl_ui --clone
+hermes profile create jl_php --clone
+hermes profile create jl_qa --clone
+
+source .venv/bin/activate
+cd test-project/ #空白工作目錄
+#sudo rm -rf /var/www/html/*
+#sudo rm -rf /var/www/html/.[!.]*
+hermes -p jl_lead chat
+
+
+=======================
+命令提示詞
+
+以後只要有 技能或是記憶 新增或異動 都要備份到 /home/vblinux/Hermes_BK
+這是額外鐵律規則 請記住
+
+開發一個【通用可擴充功能的後台系統 】的空白主頁+可用的登入頁面。包含前端 layui 表單，以及後端對應 PHP 8 PDO API。
+//請幫我開發一個【會員管理系統 】的空白主頁+可用的登入頁面。包含前端 layui 表單與表格，以及後端 PHP 8 PDO API。
+
+'未開自爆模式'
+這一次佈署過程 你不僅大量配置伺服器設定 和修改對應程式碼
+應該記取這次經驗建立對應技能或記憶 方便下次全新環境配置 或 當下次分配工作 交代下屬注意 藉此提升效率
+
+'已經讓SUDO不用輸入密碼 ~開啟自爆模式 後'
+這一次佈署過程 你不僅配置伺服器設定 而且大量修改對應程式碼
+應該記取這次經驗建立對應技能或記憶 方便下次分配工作時提醒下屬不要再犯這類錯誤 藉此整體提升效率
+
+在目前基礎上實現用戶管理的 新增/修改/刪除/查詢 等功能
+
+目前進度如何 
+不要忘記你的任務就是釐清問題+將釐清內容明確指配給下屬處理 最後要定時監控你下屬的狀態
+不管下屬是誰都要一視同仁 只要違反監控時程 一律刪除工作並重新指派對應工作
+
+你已經將目前所有程式佈署到測試環境 並且用瀏覽器完成自動化測試了嗎
+
+我也測試成功 所以你可以結案 並接續完成收尾工作
+
+這一次專案過程 你不僅配置伺服器設定 而且大量修改對應程式碼
+應該記取這次經驗建立或修改對應技能或記憶 方便下次分配工作時提醒下屬不要再犯這類錯誤 藉此整體提升效率
+最後並執行備份動作 這是也是當收到結案命令 的內容之一 千萬別忘了
