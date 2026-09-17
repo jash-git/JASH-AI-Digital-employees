@@ -11,8 +11,13 @@ https://missav.ws/dsjh-017-uncensored-leak
 上面連結 找出影片長度大於30分鐘的M3u8
 把影片內容下載並轉成MP4給我 記得在下載過程定時每3分鐘用中文回報進度給我
 
+https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
+上面連結 找出影片長度大於30分鐘的M3u8
+把影片內容下載並轉成MP4給我 記得在下載過程定時每3分鐘用中文回報進度給我
+
 開始分析我的專案
 所在目錄: /media/sf_VM/VPOS_Avalonia/
 條列下列資訊: 使用何種開發基底、使用那些套件、有哪些隱藏效能缺陷可以改善、有哪些漏洞
 
 
+hermes --yolo # --yolo 省去授權
