@@ -547,6 +547,70 @@ TASK-015-A1和 TASK-015-A2 我都測試編譯測試完成了
 我在強調一次：使用 微步方式規畫解決方案，其中每一微步要符合監控時程能完成的範圍之後 要下屬依照規劃微步內容進行修改和驗證
 現在開始處理 TASK-028
 
+TASK-028 編譯雖然能通過 但是發現在執行自動偵測並提示關帳時 DB寫入會一直出現下列類似錯誤
+2026-09-18 09:05:27:777 => SQLNormal ; DBWriter:INSERT INTO upload_data (SID,upload_type,data_no,created_time,updated_time) VALUES ('202609180002', 'DRP','DR-202609003','2026-09-18 09:05:26.020','2026-09-18 09:05:26.020');
+2026-09-18 09:05:27:795 => DBWriter ERROR: Data Source cannot be empty.  Use :memory: to open an in-memory database
+2026-09-18 09:05:27:823 => DBWriter ERROR: Data Source cannot be empty.  Use :memory: to open an in-memory database
+2026-09-18 09:05:27:852 => DBWriter ERROR: Data Source cannot be empty.  Use :memory: to open an in-memory database
+
+現在請按照慣例 由你分析問題使用微步方式規畫解決方案，其中每一微步要符合監控時程能完成的範圍之後 要下屬依照規劃微步內容進行修改和驗證
+
+上述BUG你是建立 TASK-034 編號 我覺得不妥 應該歸屬在TASK-028的子任務
+
+另外 針對剛才錯誤 DBWriter.Execute(sql, useDefault=true) 排空時設定 Database = ""，再調 OpenConn("", blnAppSet=true) → ConnectionStringLoad("") 因沒有對應 switch case 而回傳空字串 → SQLite 開連線拋「Data Source cannot be empty」。
+我現在要求你或你要求你下屬全面清查所有程式碼 把所以這類問題全部找出
+之後按照慣例 由你分析問題使用微步方式規畫解決方案，其中每一微步要符合監控時程能完成的範圍之後 要下屬依照規劃微步內容進行修改和驗證
+
+這也應該算是在TASK-028的另一子任務
+
+等你將上述都完成後 我再來一起測試
+
+我已經編譯驗證過TASK-028
+現在先回顧一下TASK-028的完整分析開發與除錯過程 有沒有哪些是可以精煉成要 修改/新增成技能或工具的資料 如果有先趕快處理
+將你目前擁有技能和記憶 按照你下屬所負責的工作內容與範圍 進行對應指定分享與更新 以利於我下次若直接使用hermes -p XXXX chat 呼叫特定人格工作時 能用到已訓練好的技能與記憶
+應該沒忘記只要有更新技能或記憶都要進行備份
+
+我在強調一次：使用 微步方式規畫解決方案，其中每一微步要符合監控時程能完成的範圍之後 要下屬依照規劃微步內容進行修改和驗證
+現在開始處理 TASK-029
+
+經常看到 memory滿了訊息 可否把memory的內容變成獨立技能或工具 
+而memory內只紀錄調用流程順序 這樣是否能解決頻繁發生的問題 這是我的發想 你評估看看
+	-> 我的建議下一步（你挑）：
+		1. 先驗證上限可否調 → 我去查 config.yaml / memory backend 是否可設字元上限（最省事）。
+		2. 實作混合結構 → 我把 B 類內容（委派策略的詳細流程、audit 步驟）抽成 skill，memory 只留 A 類 + skill 指標。這需要動到 skill_manage + memory 重構。
+		3. 先不動 → 維持現狀，我每次定期精簡 memory（我已在做，剛把 TASK-029 教訓併進一條）。
+		你倾向哪條
+	● 我選2 因為這樣能保留更多已知的資訊
+	
+我剛才精煉了jl_lead旗下jl-delegation-workflow的skills 路徑如下
+/home/vblinux/.hermes/profiles/jl_lead/skills/jl-delegation-workflow
+由於他也三個下屬 但是開發的是WEB專案 現在 你就去閱讀該內容 看看有哪些細節 你可以做為借鏡
+藉此優化你的vpos-delegation-workflow的skills 以利之後開發使用
+
+我已經編譯驗證過TASK-029 現在開始處理 TASK-030
+	
+下列是編譯錯誤 在了解狀況後 按照流程處理
+嚴重性	程式碼	說明	專案	檔案	行	歸併狀態	詳細資料
+錯誤 (作用中)	CS0246	找不到類型或命名空間名稱 'IHttpClientFactory' (是否遺漏了 using 指示詞或組件參考?)	VPOS_Avalonia	C:\Users\jashv\OneDrive\桌面\GITHUB\127\VPOS_Avalonia\VPOS_Avalonia\ToolLib\HttpsFun.cs	156		
+錯誤 (作用中)	CS0234	命名空間 'Microsoft' 中沒有類型或命名空間名稱 'Extensions' (是否遺漏了組件參考?)	VPOS_Avalonia	C:\Users\jashv\OneDrive\桌面\GITHUB\127\VPOS_Avalonia\VPOS_Avalonia\ToolLib\HttpsFun.cs	10		
+錯誤 (作用中)	CS0246	找不到類型或命名空間名稱 'IHttpClientFactory' (是否遺漏了 using 指示詞或組件參考?)	VPOS_Avalonia	C:\Users\jashv\OneDrive\桌面\GITHUB\127\VPOS_Avalonia\VPOS_Avalonia\ToolLib\HttpsFun.cs	161		
+錯誤 (作用中)	CS0246	找不到類型或命名空間名稱 'IHttpClientFactory' (是否遺漏了 using 指示詞或組件參考?)	VPOS_Avalonia	C:\Users\jashv\OneDrive\桌面\GITHUB\127\VPOS_Avalonia\VPOS_Avalonia\ToolLib\HttpsFun.cs	163		
+錯誤 (作用中)	CS0246	找不到類型或命名空間名稱 'ServiceCollection' (是否遺漏了 using 指示詞或組件參考?)	VPOS_Avalonia	C:\Users\jashv\OneDrive\桌面\GITHUB\127\VPOS_Avalonia\VPOS_Avalonia\ToolLib\HttpsFun.cs	165		
+錯誤 (作用中)	CS0246	找不到類型或命名空間名稱 'IHttpClientFactory' (是否遺漏了 using 指示詞或組件參考?)	VPOS_Avalonia	C:\Users\jashv\OneDrive\桌面\GITHUB\127\VPOS_Avalonia\VPOS_Avalonia\ToolLib\HttpsFun.cs	175		
+
+我已經編譯驗證過TASK-030 現在開始處理 TASK-031
+
+回報 TASK-031 目前狀態
+
+我好奇 當沒有任何hermes對話時 那麼 還會去呼叫gpu做運算嗎 -> X
+所以只要有對話還開著 會定時觸發gpu動作沒錯吧 -> X
+
+我已經編譯驗證過TASK-031 現在開始處理 TASK-032
+
+我已經編譯驗證過TASK-032 現在開始處理 TASK-033
+
+又經過數次的開發 現在應該精煉一下經驗值 針對相關技能或記憶進行校驗修正 方便下次全新環境配置 或 當下次分配工作 交代下屬注意 藉此提升效率
+
 ~~~~~~~~~~~~~~~~~~~
 sudo rm -rf /media/sf_VM/Hermes_BK 
 sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份
@@ -570,7 +634,7 @@ hermes dashboard #WEB UI 查看歷史軌跡& 目前配置
 
 手動開啟 Hermes gateway[獨立終端機 只要一次]
 cd ~
-hermes gateway
+hermes gateway start
 hermes cron status
 
 ********************
@@ -597,5 +661,5 @@ hermes -p vpos_lead chat --yolo # --yolo 省去授權
 
 上面是最新編譯錯誤 請先使用graphify進行整個專案的圖譜讀取 在了解全局後針對問題進行思考 最後在知道問題的解決方法後 指派下屬修正
 
-
+現在先回顧一下 XXXXXXXX 的完整分析開發與除錯過程 有沒有哪些是可以精煉成為 修改/新增技能或工具的資料 如果有先趕快處理 以利之後開發呼叫
 

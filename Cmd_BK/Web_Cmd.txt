@@ -153,14 +153,67 @@ https://www.suanming.com.tw/
 
 此次開發過程 是否有任何有價值的內容 可以精鍊成技能或工具 藉此加速日後工作進行
 
+我剛才發現 https://www.suanming.com.tw/tool/ziwei 和 目前 http://localhost/tool/ziwei.html 內容有大的落差
+所以現在先分析對方和目前內容差異 使用 微步方式規畫補齊差異解決方案 並記錄在工作列表內 之後下屬依照規劃微步內容進行修改 最後放到測試機做驗證
+
+就指派下屬工作部分 我在profiles/vpos_lead下面訓練了一個類似技能
+由於profiles/vpos_lead/也是三個下屬 所以 請你現在去閱讀該項技能 路徑下
+/home/vblinux/.hermes/profiles/vpos_lead/skills/subagent-delegation
+把上述技能變成符合你可以用版本 並在之後指派工作給下屬時進行呼叫 達到降低失敗次數機會
+
+此次開發過程 是否有任何有價值的內容 可以精鍊成技能或工具 藉此加速日後工作進行
+
+將你目前擁有技能和記憶 按照你下屬所負責的工作內容與範圍 進行對應指定分享與更新 以利於我下次若直接使用hermes -p XXXX chat 呼叫特定人格工作時 能用到已訓練好的技能與記憶
+最後應該沒忘記只要有更新技能或記憶都要進行備份
+
+檢查工作清單 找出還未完的工作項目 依序取出 使用 微步方式規畫解決方案，其中每一微步要符合監控時程能完成的範圍之後 要下屬依照規劃微步內容進行修改和驗證
+上述工作若全部完成則使用瀏覽器 全面檢查http://localhost/ 內所有連結 查看是否還有未實作(不能正常顯示)的網頁連結 記錄到工作清單
+
+先就此次工作過程把能精鍊成技能或工具的內容 變成對應的資料 以利於之後的開發
+
+在 把工作清單內 未完成的工作重新整理編排 從簡單到難 
+如有要參考原佔資料該往只如下https://www.suanming.com.tw
+上述工作完成後 使用 微步方式規畫解決方案，其中每一微步要符合監控時程能完成的範圍之後 要下屬依照規劃微步內容依序進行修改和驗證
+
+首先把 f-01和f-02從工作清單移除
+之後先從f-04開始執行
+
+我好奇問一下 當換一個專案(目錄) 現在技能和工具和知識 能在順利被調用嗎
+
+我剛才精煉了vpos_lead旗下vpos-delegation-workflow 的 skill 路徑如下
+/home/vblinux/.hermes/profiles/vpos_lead/skills/vpos-delegation-workflow
+其中 下面兩項 特別重要 
+9. **Dev→QA 依賴順序（鐵則, 2026-09-21 TASK-030 教訓）**
+10. **Gateway 狀態交叉確認（2026-09-21 TASK-030 教訓）**
+所以現在就查看相關規則 如果你現在也有相關缺陷 那就也將其整合到你的規範內 
+
+我剛才精煉了vpos_lead旗下vpos-delegation-workflow 的 skill 路徑如下
+/home/vblinux/.hermes/profiles/vpos_lead/skills/vpos-delegation-workflow
+其中 10. **Gateway 狀態交叉確認（2026-09-21 TASK-030 教訓）** 又在優化
+所以現在就查看相關規則 如果你現在也有相關缺陷 那就也將其整合到你的規範內 
+
+我現在好奇另一件事 那就是 setp0.1 會建立常駐程式 就算我和你的對話都以結束 它依然在沒錯吧
+systemctl --user stop hermes-gateway-jl_lead.service（手動停）
+
+我好奇 當沒有任何hermes對話時 那麼 還會去呼叫gpu做運算嗎 -> X
+所以只要有對話還開著 會定時觸發gpu動作沒錯吧 -> X
+
+
+~~之後執行~~ 依您明確的「今天做完 F03-M1 即可、暫停所有工作」指示，我不會復工或重派這個子代理。以下是目前停頓狀態的確認
 
 
 
 
 ==================================================
+
+~~~~~~~~~~~~~~~~~~~
+sudo rm -rf /media/sf_VM/Hermes_BK 
+sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份
+
+
 手動開啟 Hermes gateway[獨立終端機 只要一次]
 cd ~
-hermes gateway
+hermes gateway start
 hermes cron status
 
 ********************
@@ -172,6 +225,10 @@ cd test-project/ #空白工作目錄
 hermes -p jl_lead chat --yolo # --yolo 省去授權
 
 
-此次開發過程 是否有任何有價值的內容 可以精鍊成技能或工具 藉此加速日後工作進行
+先就此次工作過程把能精鍊成技能或工具的內容 變成對應的資料 以利於之後的開發
 
 我在強調一次：使用 微步方式規畫解決方案，其中每一微步要符合監控時程能完成的範圍之後 要下屬依照規劃微步內容進行修改和驗證
+
+將你目前擁有技能和記憶 按照你下屬所負責的工作內容與範圍 進行對應指定分享與更新 以利於我下次若直接使用hermes -p XXXX chat 呼叫特定人格工作時 能用到已訓練好的技能+工具與記憶
+
+最後應該沒忘記只要有更新技能或記憶都要進行備份

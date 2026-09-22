@@ -19,5 +19,7 @@ https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
 所在目錄: /media/sf_VM/VPOS_Avalonia/
 條列下列資訊: 使用何種開發基底、使用那些套件、有哪些隱藏效能缺陷可以改善、有哪些漏洞
 
+精煉一下本次內容 把有用的資訊整理成對應技能/工具甚至是記憶 利於下次工作提升效率
+最後應該沒忘記只要有更新技能或工具都要進行對其他profile 分享 和 執行備份 /home/vblinux/Hermes_BK/backup.sh
 
 hermes --yolo # --yolo 省去授權
