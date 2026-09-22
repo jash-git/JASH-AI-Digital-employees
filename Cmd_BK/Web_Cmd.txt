@@ -198,8 +198,9 @@ systemctl --user stop hermes-gateway-jl_lead.service（手動停）
 我好奇 當沒有任何hermes對話時 那麼 還會去呼叫gpu做運算嗎 -> X
 所以只要有對話還開著 會定時觸發gpu動作沒錯吧 -> X
 
-
-~~之後執行~~ 依您明確的「今天做完 F03-M1 即可、暫停所有工作」指示，我不會復工或重派這個子代理。以下是目前停頓狀態的確認
+我剛才精煉了vpos_lead旗下vpos-delegation-workflow 的 skill 路徑如下
+/home/vblinux/.hermes/profiles/vpos_lead/skills/vpos-delegation-workflow
+所以現在就查看相關規則 如果你現在也有相關缺陷 那就也將其整合到你的規範內 
 
 
 
