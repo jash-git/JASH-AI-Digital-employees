@@ -1,0 +1,5 @@
+Zuma game at /home/vblinux/zuma.html: initial ball chain now starts at START_DIST (feeder side, near shooter) and extends up toward skull — fixed from the original END_DIST-bunched layout. Chain is DESCENDING by dist (index 0 = front/near skull, eaten first). If user reports balls "not starting from track beginning", check initLevel() line ~246: `dist: START_DIST + (seed - i) * SPACING`.
+§
+用戶偏好：做「事物分析/評析」報告時，要主動用**多面向、量化驗證**的方式審視。做法：(1) 先界定各維度標準；(2) 對每個面向給分附證據；(3) 區分核心命題vs配角、品質問題vs尺度問題；(4) 結論誠實標出「符合但有條件」。報告格式：參考資料集中放最後、分類清晰、附原始連結。CORE:先量化再逐項查證真實市場數據（流浪教師存股教訓：12-14%/yr要先對照實際殖利率）。
+§
+Profile 策略：8 profile（jl_lead/jl_php/jl_qa/jl_ui/vpos_core/vpos_lead/vpos_qa/vpos_ui）各自獨立記憶與技能，互不共享；default=/home/vblinux/.hermes。分享按需——特定profile需要時才手動同步特定檔案。同步：`cp -r <skill> /home/vblinux/.hermes/profiles/<p>/skills/` 逐檔拷貝到各 profile skills 目錄（global skills不自動同步）。備份：sudo /home/vblinux/Hermes_BK/backup.sh（自動sudo）。

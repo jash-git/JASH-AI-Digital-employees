@@ -22,6 +22,7 @@ https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
 精煉一下本次內容 把有用的資訊整理成對應技能/工具甚至是記憶 利於下次工作提升效率
 最後應該沒忘記只要有更新技能或工具都要進行對其他profile 分享 和 執行備份 /home/vblinux/Hermes_BK/backup.sh
 
+
 ~~~~~~~~~~~~~~~~~~~
 sudo rm -rf /media/sf_VM/Hermes_BK 
 sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份

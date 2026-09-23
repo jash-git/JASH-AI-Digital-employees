@@ -1,0 +1,240 @@
+/* ========================================
+   通用後台系統 — 自訂樣式
+   ======================================== */
+
+/* ---------- 登入頁面背景漸層 ---------- */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+/* ---------- 登入卡片美化 ---------- */
+.login-card {
+  width: 420px;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.login-card .layui-card-header {
+  border-bottom: none;
+  padding: 30px 30px 0 30px;
+  text-align: center;
+}
+
+.login-card .layui-card-header h2 {
+  font-size: 26px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.login-card .layui-card-body {
+  padding: 24px 30px 30px 30px;
+}
+
+/* ---------- 表單欄位 ---------- */
+.login-card .layui-form-item {
+  margin-bottom: 20px;
+}
+
+.login-card .layui-input {
+  height: 44px;
+  border-radius: 6px;
+  padding-left: 14px;
+  font-size: 15px;
+  border: 1px solid #ddd;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.login-card .layui-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  outline: none;
+}
+
+/* 表單標籤 */
+.login-card .layui-form-label {
+  font-weight: 500;
+  color: #555;
+  padding-left: 0;
+}
+
+/* ---------- 登入按鈕 ---------- */
+.login-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 16px;
+  border-radius: 6px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  transition: opacity 0.25s;
+}
+
+.login-btn:hover {
+  opacity: 0.92;
+}
+
+/* ---------- 底部版權 ---------- */
+.login-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 16px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* ---------- 側邊欄選單項目 ---------- */
+.sidebar-menu .layui-nav-item a {
+  padding-left: 24px;
+}
+
+/* ---------- 內容區 ---------- */
+.content-area {
+  padding: 20px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 60px);
+}
+
+/* ---------- 儀表板卡片 ---------- */
+.dashboard-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.dashboard-card h3 {
+  margin-top: 0;
+  font-size: 18px;
+  color: #333;
+  border-left: 4px solid #667eea;
+  padding-left: 12px;
+}
+
+/* ---------- 統計數字卡片 ---------- */
+.stat-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 24px;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .stat-number {
+  font-size: 36px;
+  font-weight: 700;
+  color: #667eea;
+  margin: 8px 0;
+}
+
+.stat-card .stat-label {
+  font-size: 14px;
+  color: #999;
+}
+
+/* ---------- 頂部導航列 ---------- */
+.top-header {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 60px;
+}
+
+.top-header .system-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-header .system-title .logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ---------- 登出按鈕 ---------- */
+.logout-btn {
+  color: #666;
+  padding: 0 12px;
+}
+
+.logout-btn:hover {
+  color: #ff5722;
+}
+
+/* ---------- 側邊欄 ---------- */
+.side-nav {
+  background: #fff;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  overflow-y: auto;
+}
+
+.side-nav .layui-nav-tree {
+  background: transparent;
+}
+
+.side-nav .layui-nav-tree .layui-nav-item a:hover {
+  background: transparent;
+  color: #667eea;
+}
+
+.side-nav .layui-nav-tree .layui-nav-itemed > .layui-nav-child {
+  padding: 4px 0;
+}
+
+.side-nav .layui-nav-tree .layui-this {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.side-nav .layui-nav-tree .layui-this > a {
+  color: #fff;
+}
+
+.side-nav .layui-nav-tree .layui-this a:hover {
+  color: #fff;
+}
+
+/* ---------- 滾動條美化 ---------- */
+.side-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-nav::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.side-nav::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
+}

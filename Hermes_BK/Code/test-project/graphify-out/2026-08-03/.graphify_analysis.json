@@ -1,0 +1,223 @@
+{
+  "communities": {
+    "0": [
+      "src_public_lib_layui_layui",
+      "src_public_lib_layui_layui_bt",
+      "src_public_lib_layui_layui_ce",
+      "src_public_lib_layui_layui_dn",
+      "src_public_lib_layui_layui_dt",
+      "src_public_lib_layui_layui_e",
+      "src_public_lib_layui_layui_en",
+      "src_public_lib_layui_layui_fn",
+      "src_public_lib_layui_layui_ft",
+      "src_public_lib_layui_layui_mn",
+      "src_public_lib_layui_layui_nn",
+      "src_public_lib_layui_layui_tt",
+      "src_public_lib_layui_layui_u",
+      "src_public_lib_layui_layui_xe",
+      "src_public_lib_layui_layui_zt"
+    ],
+    "1": [
+      "src_public_lib_layui_layui_de",
+      "src_public_lib_layui_layui_h",
+      "src_public_lib_layui_layui_he",
+      "src_public_lib_layui_layui_me",
+      "src_public_lib_layui_layui_p",
+      "src_public_lib_layui_layui_s",
+      "src_public_lib_layui_layui_tn",
+      "src_public_lib_layui_layui_y",
+      "src_public_lib_layui_layui_ye"
+    ],
+    "2": [
+      "src_public_lib_layui_layui_b",
+      "src_public_lib_layui_layui_be",
+      "src_public_lib_layui_layui_ee",
+      "src_public_lib_layui_layui_je",
+      "src_public_lib_layui_layui_ne",
+      "src_public_lib_layui_layui_ve",
+      "src_public_lib_layui_layui_w",
+      "src_public_lib_layui_layui_we"
+    ],
+    "3": [
+      "src_public_lib_layui_layui_fe",
+      "src_public_lib_layui_layui_ge",
+      "src_public_lib_layui_layui_k",
+      "src_public_lib_layui_layui_le",
+      "src_public_lib_layui_layui_qt",
+      "src_public_lib_layui_layui_t",
+      "src_public_lib_layui_layui_ue"
+    ],
+    "4": [
+      "src_public_lib_layui_layui_pe",
+      "src_public_lib_layui_layui_qe",
+      "src_public_lib_layui_layui_wt",
+      "src_public_lib_layui_layui_ze"
+    ],
+    "5": [
+      "src_public_lib_layui_layui_a",
+      "src_public_lib_layui_layui_at",
+      "src_public_lib_layui_layui_jt"
+    ],
+    "6": [
+      "src_api_users",
+      "src_api_users_respond"
+    ],
+    "7": [
+      "src_public_lib_layui_layui_ct",
+      "src_public_lib_layui_layui_et"
+    ],
+    "8": [
+      "src_public_lib_layui_layui_i",
+      "src_public_lib_layui_layui_oe"
+    ],
+    "9": [
+      "src_public_lib_layui_layui_q",
+      "src_public_lib_layui_layui_x"
+    ],
+    "10": [
+      "src_api_auth_check"
+    ],
+    "11": [
+      "src_api_auth_login"
+    ],
+    "12": [
+      "src_api_auth_logout"
+    ],
+    "13": [
+      "src_index"
+    ],
+    "14": [
+      "src_router"
+    ]
+  },
+  "cohesion": {
+    "0": 0.13333333333333333,
+    "1": 0.3333333333333333,
+    "2": 0.2857142857142857,
+    "3": 0.2857142857142857,
+    "4": 0.5,
+    "5": 0.6666666666666666,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0,
+    "11": 1.0,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_public_lib_layui_layui_t",
+      "label": "t()",
+      "degree": 8
+    },
+    {
+      "id": "src_public_lib_layui_layui_h",
+      "label": "H()",
+      "degree": 8
+    },
+    {
+      "id": "src_public_lib_layui_layui_ye",
+      "label": "ye()",
+      "degree": 7
+    },
+    {
+      "id": "src_public_lib_layui_layui_s",
+      "label": "s()",
+      "degree": 7
+    },
+    {
+      "id": "src_public_lib_layui_layui_p",
+      "label": "p()",
+      "degree": 5
+    },
+    {
+      "id": "src_public_lib_layui_layui_y",
+      "label": "y()",
+      "degree": 5
+    },
+    {
+      "id": "src_public_lib_layui_layui_ne",
+      "label": "ne()",
+      "degree": 5
+    },
+    {
+      "id": "src_public_lib_layui_layui_b",
+      "label": "b()",
+      "degree": 5
+    },
+    {
+      "id": "src_public_lib_layui_layui_w",
+      "label": "w()",
+      "degree": 4
+    },
+    {
+      "id": "src_public_lib_layui_layui_q",
+      "label": "q()",
+      "degree": 3
+    }
+  ],
+  "surprises": [
+    {
+      "source": "y()",
+      "target": "t()",
+      "source_files": [
+        "src/public/lib/layui/layui.js",
+        "src/public/lib/layui/layui.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "note": "Bridges community 1 \u2192 community 3"
+    },
+    {
+      "source": "H()",
+      "target": "i()",
+      "source_files": [
+        "src/public/lib/layui/layui.js",
+        "src/public/lib/layui/layui.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "note": "Bridges community 1 \u2192 community 8"
+    },
+    {
+      "source": "s()",
+      "target": "b()",
+      "source_files": [
+        "src/public/lib/layui/layui.js",
+        "src/public/lib/layui/layui.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "note": "Bridges community 2 \u2192 community 1"
+    },
+    {
+      "source": "Et()",
+      "target": "p()",
+      "source_files": [
+        "src/public/lib/layui/layui.js",
+        "src/public/lib/layui/layui.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 1 \u2192 community 7"
+    },
+    {
+      "source": "ye()",
+      "target": "q()",
+      "source_files": [
+        "src/public/lib/layui/layui.js",
+        "src/public/lib/layui/layui.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 9 \u2192 community 1"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

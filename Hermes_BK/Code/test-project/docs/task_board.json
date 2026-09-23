@@ -1,0 +1,46 @@
+{
+  "project": "universal-admin-panel",
+  "version": "1.0.0",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "後端：登入 API + DB Schema + .env 連線",
+      "assignee": "jl_php",
+      "status": "DONE",
+      "description": "建立 users 資料表 (id, username, password_hash, role, created_at)。實作 auth/login.php (POST 登入), auth/logout.php (POST 登出), auth/check.php (GET 檢查登入狀態)。使用 PDO 預處理，密碼使用 password_hash/password_verify。從 .env 讀取連線參數。",
+      "deliverables": ["src/config/schema.sql", "src/api/auth/login.php", "src/api/auth/logout.php", "src/api/auth/check.php"]
+    },
+    {
+      "id": "TASK-002",
+      "title": "前端：登入頁面 + index.html 主框架",
+      "assignee": "jl_ui",
+      "status": "DONE",
+      "description": "建立 login.html (layui 登入表單，含表單驗證，POST 到 /api/auth/login.php)。建立 index.html (後台主框架，含側邊欄導航 + iframe 內容區，未登入時導向 login.html)。",
+      "deliverables": ["src/public/login.html", "src/public/index.html"]
+    },
+    {
+      "id": "TASK-003",
+      "title": "前端：CDN 資源改為本地檔案（離線/內網支援）",
+      "assignee": "jl_ui",
+      "status": "DONE",
+      "description": "將 layui CSS/JS 從 CDN 引用改為本地檔案。jQuery 由 layui.js 內建（bundled），不需額外下載。確保離線/內網環境可正常運作。",
+      "deliverables": ["src/public/lib/layui/css/layui.css", "src/public/lib/layui/layui.js", "src/public/lib/layui/font/iconfont.eot", "src/public/lib/layui/font/iconfont.svg", "src/public/lib/layui/font/iconfont.ttf", "src/public/lib/layui/font/iconfont.woff", "src/public/lib/layui/font/iconfont.woff2"]
+    },
+    {
+      "id": "TASK-004",
+      "title": "後端：用戶管理 CRUD API (users.php)",
+      "assignee": "jl_php",
+      "status": "DONE",
+      "description": "建立 src/api/users.php 統一處理用戶管理的所有 API：GET list（分頁+搜尋+篩選角色，layui table 格式）、GET detail（單筆查詢）、POST create（新增用戶+密碼加密）、POST update（修改用戶資料）、POST delete（刪除用戶）。全部使用 PDO 預處理，需 session 驗證。",
+      "deliverables": ["src/api/users.php"]
+    },
+    {
+      "id": "TASK-005",
+      "title": "前端：用戶列表頁面 (user-list.html) 嵌入 index.html",
+      "assignee": "jl_ui",
+      "status": "DONE",
+      "description": "建立 src/public/user-list.html 獨立頁面，含 layui table 動態表格（顯示 id, username, role, created_at）、搜尋列、新增/編輯/刪除按鈕（layer 彈窗表單）。修改 index.html 側邊欄用戶列表項目，透過 iframe 載入 user-list.html。",
+      "deliverables": ["src/public/user-list.html", "src/public/index.html"]
+    }
+  ]
+}

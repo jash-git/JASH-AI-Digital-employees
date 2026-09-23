@@ -233,3 +233,7 @@ hermes -p jl_lead chat --yolo # --yolo 省去授權
 將你目前擁有技能和記憶 按照你下屬所負責的工作內容與範圍 進行對應指定分享與更新 以利於我下次若直接使用hermes -p XXXX chat 呼叫特定人格工作時 能用到已訓練好的技能+工具與記憶
 
 最後應該沒忘記只要有更新技能或記憶都要進行備份
+
+我剛才精煉了vpos_lead旗下vpos-delegation-workflow 的 skill 路徑如下
+/home/vblinux/.hermes/profiles/vpos_lead/skills/vpos-delegation-workflow
+所以現在就查看相關規則 如果你現在也有相關缺陷 那就也將其整合到你的規範內 

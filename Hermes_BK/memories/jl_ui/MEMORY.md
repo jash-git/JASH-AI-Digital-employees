@@ -1,0 +1,8 @@
+Playwright single-arrow-function-arg wrapping quirk: when calling page.evaluate("(arg) => {...}", {"arg": value}) with a SINGLE arrow function argument, Playwright wraps the arg as an object — inside the callback `arg` becomes `{arg: value}`, so `arg.y` is undefined. Fix: either destructure in JS `(arg) => { const {y} = arg; ...}` or pass a plain numeric/string literal embedded via Python `%f`/string formatting (no arg passing). Relevant for jl_ui / jl_qa browser-based frontend testing with Playwright.
+
+§ Layui form.render() 洗掉動態選項教訓 (2026-09-16): 用 layui.use(['form',...]) 的頁面，Layui 載入時自動渲染所有 <select>；fillMonths()/fillDays() 後段才填原生 select 時，Layui 先建空的假下拉(.layui-form-select dl dd, ddCount=1)。填好後必須再 form.render('select') 同步，否側使用者看到空下拉。optCount=12 ≠ 能用，須確認假下拉 dd 實際有選項。修：fill 後補 if(form) form.render('select')。
+
+§ suanming 專案背景 + 前端職責 (2026-09-18): 工作範圍僅 src/public/。每組功能建獨立頁面（如 user.html）透過 iframe 嵌入 index.html。已分發 cdp-web-test（CDP 瀏覽器實測驗證）、original-site-content-alignment（原站文章型頁面對齊，difflib 驗證）、content-alignment、project-finalization（專案收尾清理）技能。**月份選單修完後務必跑 scripts/check-month-select.sh**（month-select-regression-guard skill）。Layui form.render('select') 後必須同步假下拉。
+§ 共用 JS 相對路徑連結崩潰教訓 (2026-09-19)：改 articles.js/app.js 等共用資料檔時，文章卡片連結一律用**絕對路徑**（`url:'/blog/detail.html?id=xxx'`、`img:'/blog/thumb_...webp'`），不要用相對路徑——從 /cate/、/type/ 子目錄點會崩成 404。改完前端先跑 **scripts/site-link-audit.py**（site-link-audit skill，CDP 逐頁載入並點擊每個相對連結）確認 exit=0 再交 QA。已寫入 jl-delegation-workflow「陷阱8」。
+§
+記憶主動管理原則：有新偏好/修正/環境事實即存；見零散重複 entry 或 >70% 時趁手斂為少數高訊號 entry，勿等滿載或等使用者提。能成技能(skill)或工具(terminal/script)者一律移出記憶，記憶只留不可程序化的領域知識與教訓。

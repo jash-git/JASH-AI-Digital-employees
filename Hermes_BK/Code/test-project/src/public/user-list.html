@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用戶列表 — 通用後台系統</title>
+  <link rel="stylesheet" href="lib/layui/css/layui.css">
+  <style>
+    .search-bar { padding: 15px 15px 0; }
+    .search-bar .layui-form-item { margin-bottom: 0; }
+    .table-wrap { padding: 15px; }
+  </style>
+</head>
+<body>
+  <div class="search-bar">
+    <form class="layui-form" lay-filter="searchForm">
+      <div class="layui-row layui-col-space10">
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <input type="text" name="username" placeholder="請輸入帳號" autocomplete="off" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <select name="role">
+              <option value="">全部角色</option>
+              <option value="admin">admin</option>
+              <option value="user">user</option>
+            </select>
+          </div>
+        </div>
+        <div class="layui-col-md6" style="text-align:right;">
+          <div class="layui-form-item">
+            <button type="button" class="layui-btn" id="searchBtn">
+              <i class="layui-icon layui-icon-search"></i> 搜尋
+            </button>
+            <button type="button" class="layui-btn layui-btn-normal" id="addBtn">
+              <i class="layui-icon layui-icon-addition"></i> 新增用戶
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-wrap">
+    <table class="layui-hide" id="userTable" lay-filter="userTable"></table>
+  </div>
+
+  <!-- 工具列模板 -->
+  <script type="text/html" id="toolbarOp">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">編輯</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">刪除</a>
+  </script>
+
+  <!-- 角色顯示模板 -->
+  <script type="text/html" id="roleTpl">
+    {{# if(d.role === 'admin'){ }}
+      <span class="layui-badge layui-bg-blue">{{ d.role }}</span>
+    {{# } else { }}
+      <span class="layui-badge layui-bg-gray">{{ d.role }}</span>
+    {{# } }}
+  </script>
+
+  <!-- 狀態顯示模板 -->
+  <script type="text/html" id="statusTpl">
+    {{# if(d.status === 1){ }}
+      <span class="layui-badge layui-bg-green">啟用</span>
+    {{# } else { }}
+      <span class="layui-badge layui-bg-gray">停用</span>
+    {{# } }}
+  </script>
+
+  <script src="lib/layui/layui.js"></script>
+  <script>
+    layui.use(['table', 'form', 'layer', 'jquery'], function () {
+      var table = layui.table;
+      var form = layui.form;
+      var layer = layui.layer;
+      var $ = layui.$;
+
+      // ========== 自訂驗證規則 ==========
+      form.verify({
+        required: function (value, item) {
+          if (!value || !value.trim()) {
+            return '此欄位為必填';
+          }
+        },
+        password: function (value) {
+          if (value && value.length < 6) {
+            return '密碼長度至少 6 個字元';
+          }
+        }
+      });
+
+      // ========== HTML 轉義 ==========
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+      }
+
+      // ========== 日期格式化 ==========
+      function formatDate(val) {
+        if (!val) return '';
+        var d = new Date(val);
+        if (isNaN(d.getTime())) return val;
+        var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+          + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+      }
+
+      // ========== 表格渲染 ==========
+      var ins1 = table.render({
+        elem: '#userTable',
+        url: '/api/users.php?method=list',
+        method: 'get',
+        page: true,
+        limit: 10,
+        limits: [10, 20, 50],
+        cols: [[
+          { type: 'checkbox', fixed: 'left' },
+          { field: 'id', title: 'ID', width: 80, sort: true, align: 'center' },
+          { field: 'username', title: '帳號', minWidth: 120 },
+          { field: 'role', title: '角色', width: 120, templet: '#roleTpl', align: 'center' },
+          { field: 'status', title: '狀態', width: 100, templet: '#statusTpl', align: 'center' },
+          { field: 'created_at', title: '建立時間', width: 180, templet: function (d) { return formatDate(d.created_at); }, align: 'center' },
+          { title: '操作', width: 160, toolbar: '#toolbarOp', fixed: 'right', align: 'center' }
+        ]],
+        parseData: function (res) {
+          // 兼容後端可能回傳 {code:0, msg:"", count:..., data:[...]}
+          return {
+            code: res.code === 0 || res.success ? 0 : -1,
+            msg: res.msg || '',
+            count: res.count || res.total || (res.data ? res.data.length : 0),
+            data: res.data || []
+          };
+        },
+        error: function (res) {
+          if (res.msg && res.msg.indexOf('未登入') !== -1) {
+            window.parent.location.href = 'login.html';
+          }
+        }
+      });
+
+      // ========== 搜尋功能 ==========
+      $('#searchBtn').on('click', function () {
+        var formData = form.val('searchForm');
+        table.reload('userTable', {
+          where: { username: formData.username, role: formData.role },
+          page: { curr: 1 }
+        });
+      });
+
+      // ========== 工具列按鈕事件 ==========
+      table.on('tool(userTable)', function (obj) {
+        var data = obj.data;
+        var layEvent = obj.event;
+
+        if (layEvent === 'edit') {
+          openEditDialog(data);
+        } else if (layEvent === 'del') {
+          layer.confirm('確定要刪除用戶「' + data.username + '」嗎？', { icon: 3, title: '提示' }, function (index) {
+            $.ajax({
+              url: '/api/users.php?method=delete',
+              type: 'POST',
+              contentType: 'application/json',
+              data: JSON.stringify({ id: data.id }),
+              dataType: 'json',
+              success: function (res) {
+                if (res.code === 0 || res.success) {
+                  layer.msg('刪除成功', { icon: 1 });
+                  table.reload('userTable');
+                } else {
+                  layer.msg(res.msg || '刪除失敗', { icon: 2 });
+                }
+              },
+              error: function () {
+                layer.msg('伺服器連線失敗', { icon: 2 });
+              }
+            });
+            layer.close(index);
+          });
+        }
+      });
+
+      // ========== 新增用戶 ==========
+      $('#addBtn').on('click', function () {
+        openAddDialog();
+      });
+
+      function openAddDialog() {
+        var layerIndex = layer.open({
+          type: 1,
+          area: ['500px', '450px'],
+          title: '新增用戶',
+          content: '<div style="padding:20px;">' +
+            '<form class="layui-form" lay-filter="addForm">' +
+              '<div class="layui-form-item"><label class="layui-form-label">帳號</label><div class="layui-input-block"><input type="text" name="username" lay-verify="required" placeholder="請輸入帳號" class="layui-input"></div></div>' +
+              '<div class="layui-form-item"><label class="layui-form-label">密碼</label><div class="layui-input-block"><input type="password" name="password" lay-verify="required|password" placeholder="請輸入密碼（至少 6 個字元）" class="layui-input"></div></div>' +
+              '<div class="layui-form-item"><label class="layui-form-label">角色</label><div class="layui-input-block"><select name="role"><option value="user">user</option><option value="admin">admin</option></select></div></div>' +
+              '<div class="layui-form-item"><label class="layui-form-label">狀態</label><div class="layui-input-block"><input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="開|停用" checked></div></div>' +
+              '<div class="layui-form-item" style="text-align:center; margin-top:20px;">' +
+                '<button type="submit" class="layui-btn" lay-submit lay-filter="addSubmit">確定</button> ' +
+                '<button type="button" class="layui-btn layui-btn-primary" id="addCancel">取消</button>' +
+              '</div>' +
+            '</form>' +
+          '</div>',
+          success: function (layero, idx) {
+            form.render();
+            $('#addCancel', layero).on('click', function () { layer.close(idx); });
+            form.on('submit(addSubmit)', function (data) {
+              $.ajax({
+                url: '/api/users.php?method=create',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                  username: data.field.username,
+                  password: data.field.password,
+                  role: data.field.role,
+                  status: data.field.status ? 1 : 0
+                }),
+                dataType: 'json',
+                success: function (res) {
+                  if (res.code === 0 || res.success) {
+                    layer.msg('新增成功', { icon: 1 });
+                    table.reload('userTable');
+                    layer.close(idx);
+                  } else {
+                    layer.msg(res.msg || '新增失敗', { icon: 2 });
+                  }
+                },
+                error: function () {
+                  layer.msg('伺服器連線失敗', { icon: 2 });
+                }
+              });
+              return false;
+            });
+          }
+        });
+      }
+
+      // ========== 編輯用戶 ==========
+      function openEditDialog(data) {
+        $.ajax({
+          url: '/api/users.php?method=detail&id=' + data.id,
+          type: 'GET',
+          dataType: 'json',
+          success: function (res) {
+            var info = res.data || res;
+            var layerIndex = layer.open({
+              type: 1,
+              area: ['500px', '450px'],
+              title: '編輯用戶',
+              content: '<div style="padding:20px;">' +
+                '<form class="layui-form" lay-filter="editForm">' +
+                  '<div class="layui-form-item"><label class="layui-form-label">帳號</label><div class="layui-input-block"><input type="text" name="username" lay-verify="required" value="' + escapeHtml(info.username || '') + '" class="layui-input"></div></div>' +
+                  '<div class="layui-form-item"><label class="layui-form-label">密碼</label><div class="layui-input-block"><input type="password" name="password" placeholder="留空不修改" class="layui-input"></div></div>' +
+                  '<div class="layui-form-item"><label class="layui-form-label">角色</label><div class="layui-input-block"><select name="role">' +
+                    '<option value="user"' + (info.role === 'user' ? ' selected' : '') + '>user</option>' +
+                    '<option value="admin"' + (info.role === 'admin' ? ' selected' : '') + '>admin</option>' +
+                  '</select></div></div>' +
+                  '<div class="layui-form-item"><label class="layui-form-label">狀態</label><div class="layui-input-block"><input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="開|停用" ' + (info.status == 1 ? 'checked' : '') + '></div></div>' +
+                  '<div class="layui-form-item" style="text-align:center; margin-top:20px;">' +
+                    '<button type="submit" class="layui-btn" lay-submit lay-filter="editSubmit">確定</button> ' +
+                    '<button type="button" class="layui-btn layui-btn-primary" id="editCancel">取消</button>' +
+                  '</div>' +
+                '</form>' +
+              '</div>',
+              success: function (layero, idx) {
+                form.render();
+                $('#editCancel', layero).on('click', function () { layer.close(idx); });
+                form.on('submit(editSubmit)', function (data) {
+                  var postData = {
+                    id: info.id,
+                    username: data.field.username,
+                    role: data.field.role,
+                    status: data.field.status ? 1 : 0
+                  };
+                  if (data.field.password && data.field.password.trim()) {
+                    postData.password = data.field.password;
+                  }
+                  $.ajax({
+                    url: '/api/users.php?method=update',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(postData),
+                    dataType: 'json',
+                    success: function (res) {
+                      if (res.code === 0 || res.success) {
+                        layer.msg('更新成功', { icon: 1 });
+                        table.reload('userTable');
+                        layer.close(idx);
+                      } else {
+                        layer.msg(res.msg || '更新失敗', { icon: 2 });
+                      }
+                    },
+                    error: function () {
+                      layer.msg('伺服器連線失敗', { icon: 2 });
+                    }
+                  });
+                  return false;
+                });
+              }
+            });
+          },
+          error: function () {
+            layer.msg('取得資料失敗', { icon: 2 });
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

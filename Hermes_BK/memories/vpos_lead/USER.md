@@ -1,0 +1,3 @@
+User closed-loop: fix → QA (vpos_qa) → PASS → compile/verify by user. Prefers "進度？" for progress, honest status only on completion/failure. Handles final compilation.
+§
+TASK-029 (2026-09-18 DONE+QA PASS): static List 執行緒安全化=消除原地 mutate+torn read,非給所有list加鎖。55個分三類:A真hazard(2:printer_valueList/promotion_join_dataList)→M1/M2修掉+Volatile.Write;B View-local(4:spec/condiment list引用全在Views/UI執行緒)→取消M3/M4零增益高風險;C SqliteDataAccess atomic reassignment(m_xxx=xxxLoad,x64原子指派天生torn-read-safe)→取消M5/M6 cascade。派單前必做跨線风险分析(全grep引用是否超出Views/Thread/)。範圍調整docs/plans/TASK-029-scope-adjustment.md(QA報告只能vpos_qa產出放review-reports/)。

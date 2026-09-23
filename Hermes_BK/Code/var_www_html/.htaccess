@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# 如果請求的是 public/ 目錄下的檔案，直接提供
+RewriteCond %{REQUEST_URI} ^/public/
+RewriteRule ^public/(.*)$ public/$1 [L]
+
+# 如果請求的是 api/ 目錄下的檔案，直接提供
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.*)$ api/$1 [L]
+
+# 其他請求導向 index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

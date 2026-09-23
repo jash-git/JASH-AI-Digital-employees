@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登入 — 通用後台系統</title>
+  <link rel="stylesheet" href="lib/layui/css/layui.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="layui-card login-card">
+      <div class="layui-card-header">
+        <h2>系統登入</h2>
+      </div>
+      <div class="layui-card-body">
+        <form class="layui-form" lay-filter="loginForm">
+          <!-- 帳號 -->
+          <div class="layui-form-item">
+            <label class="layui-form-label">帳號</label>
+            <div class="layui-input-block">
+              <input type="text" name="username" lay-verify="required" placeholder="請輸入帳號" autocomplete="off" class="layui-input">
+            </div>
+          </div>
+
+          <!-- 密碼 -->
+          <div class="layui-form-item">
+            <label class="layui-form-label">密碼</label>
+            <div class="layui-input-block">
+              <input type="password" name="password" lay-verify="required" placeholder="請輸入密碼" autocomplete="off" class="layui-input">
+            </div>
+          </div>
+
+          <!-- 登入按鈕 -->
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button type="submit" class="layui-btn login-btn" lay-submit lay-filter="loginSubmit">登入</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="login-footer">
+    <span>&copy; 2025 通用後台系統. All rights reserved.</span>
+  </div>
+
+  <script src="lib/layui/layui.js"></script>
+  <script>
+    layui.use(['form', 'layer'], function () {
+      var form = layui.form;
+      var layer = layui.layer;
+
+      // 自訂驗證規則
+      form.verify({
+        required: function (value, item) {
+          if (!value || !value.trim()) {
+            return '此欄位為必填';
+          }
+        }
+      });
+
+      // 表單送出
+      form.on('submit(loginSubmit)', function (data) {
+        var btn = document.querySelector('.login-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i> 登入中...';
+
+        layui.$.ajax({
+          url: '/api/auth/login.php',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(data.field),
+          dataType: 'json',
+          success: function (res) {
+            if (res.code === 0 || res.success) {
+              // 儲存 session token
+              if (res.data && res.data.token) {
+                sessionStorage.setItem('token', res.data.token);
+              }
+              sessionStorage.setItem('isLoggedIn', 'true');
+              sessionStorage.setItem('username', data.field.username);
+              layer.msg('登入成功！', { icon: 1, time: 800 }, function () {
+                window.location.href = 'index.html';
+              });
+            } else {
+              layer.msg(res.msg || '登入失敗，請檢查帳號密碼', { icon: 2 });
+              btn.disabled = false;
+              btn.innerHTML = '登入';
+            }
+          },
+          error: function () {
+            layer.msg('伺服器連線失敗，請稍後再試', { icon: 2 });
+            btn.disabled = false;
+            btn.innerHTML = '登入';
+          }
+        });
+
+        return false; // 阻止表單預設送出
+      });
+
+      // 如果已經登入，直接跳轉到首頁
+      if (sessionStorage.getItem('isLoggedIn') === 'true') {
+        window.location.href = 'index.html';
+      }
+    });
+  </script>
+</body>
+</html>

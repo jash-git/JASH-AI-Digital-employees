@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通用後台系統</title>
+  <link rel="stylesheet" href="lib/layui/css/layui.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layui-layout layui-layout-admin">
+
+    <!-- 頂部導航列 -->
+    <div class="layui-header top-header">
+      <div class="system-title">
+        <span class="logo-icon">A</span>
+        <span>通用後台系統</span>
+      </div>
+      <ul class="layui-nav layui-layout-right">
+        <li class="layui-nav-item">
+          <a href="javascript:;">
+            <i class="layui-icon layui-icon-username"></i>
+            <span id="headerUsername">管理員</span>
+          </a>
+          <dl class="layui-nav-child">
+            <dd><a href="javascript:;" onclick="alert('個人設定功能開發中')">個人設定</a></dd>
+          </dl>
+        </li>
+        <li class="layui-nav-item">
+          <a href="javascript:;" class="logout-btn" id="logoutBtn">
+            <i class="layui-icon layui-icon-logout"></i> 登出
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 左側導航 -->
+    <div class="layui-side layui-bg-black side-nav">
+      <div class="layui-side-scroll">
+        <ul class="layui-nav layui-nav-tree" lay-filter="sideMenu">
+          <li class="layui-nav-item layui-this">
+            <a href="javascript:;" lay-id="dashboard">
+              <i class="layui-icon layui-icon-console"></i> 儀表板
+            </a>
+          </li>
+          <li class="layui-nav-item">
+            <a href="javascript:;">
+              <i class="layui-icon layui-icon-user"></i> 用戶管理
+            </a>
+            <dl class="layui-nav-child">
+              <dd><a href="javascript:;" lay-id="user-list">用戶列表</a></dd>
+              <dd><a href="javascript:;" lay-id="user-role">權限管理</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item">
+            <a href="javascript:;">
+              <i class="layui-icon layui-icon-set"></i> 系統設定
+            </a>
+            <dl class="layui-nav-child">
+              <dd><a href="javascript:;" lay-id="sys-config">基本設定</a></dd>
+              <dd><a href="javascript:;" lay-id="sys-log">操作日誌</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item">
+            <a href="javascript:;">
+              <i class="layui-icon layui-icon-about"></i> 幫助中心
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 右側內容區域 -->
+    <div class="layui-body content-area" id="contentArea">
+      <!-- iframe 內容區（用戶列表等） -->
+      <iframe id="userListFrame" src="" frameborder="0" style="display:none; width:100%; height:100%;"></iframe>
+
+      <!-- 預設載入儀表板 -->
+      <div class="dashboard-card">
+        <h3>歡迎使用通用後台系統</h3>
+        <p class="layui-text" style="color:#666;">系統運行正常，所有模組已就緒。</p>
+      </div>
+
+      <div class="layui-row layui-col-space15">
+        <div class="layui-col-md3">
+          <div class="stat-card">
+            <div class="stat-label">總用戶數</div>
+            <div class="stat-number">1,284</div>
+            <span class="layui-badge layui-bg-green">+12%</span>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="stat-card">
+            <div class="stat-label">今日活躍</div>
+            <div class="stat-number">356</div>
+            <span class="layui-badge layui-bg-blue">+5%</span>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="stat-card">
+            <div class="stat-label">待辦事項</div>
+            <div class="stat-number">23</div>
+            <span class="layui-badge layui-bg-orange">-3%</span>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="stat-card">
+            <div class="stat-label">系統訊息</div>
+            <div class="stat-number">7</div>
+            <span class="layui-badge layui-bg-cyan">待處理</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-card" style="margin-top:20px;">
+        <h3>快速操作</h3>
+        <div class="layui-btn-group">
+          <button class="layui-btn layui-btn-sm" onclick="layer.msg('新增用戶功能開發中', {icon:0})">
+            <i class="layui-icon layui-icon-addition"></i> 新增用戶
+          </button>
+          <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="layer.msg('數據匯出功能開發中', {icon:0})">
+            <i class="layui-icon layui-icon-export"></i> 數據匯出
+          </button>
+          <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="layer.msg('系統日誌功能開發中', {icon:0})">
+            <i class="layui-icon layui-icon-log"></i> 系統日誌
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="layui-footer" style="text-align:center; padding:10px 20px; color:#999; font-size:13px;">
+      &copy; 2025 通用後台系統. All rights reserved.
+    </div>
+  </div>
+
+  <script src="lib/layui/layui.js"></script>
+  <script>
+    layui.use(['element', 'layer', 'jquery'], function () {
+      var element = layui.element;
+      var layer = layui.layer;
+      var $ = layui.$;
+
+      // ========== 登入檢查 ==========
+      if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'login.html';
+      }
+
+      // ========== 顯示使用者名稱 ==========
+      var username = sessionStorage.getItem('username') || '管理員';
+      document.getElementById('headerUsername').textContent = username;
+
+      // ========== 登出功能 ==========
+      $('#logoutBtn').on('click', function () {
+        layer.confirm('確定要登出嗎？', { icon: 3, title: '提示' }, function (index) {
+          // 清除 session
+          sessionStorage.removeItem('isLoggedIn');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('username');
+          layer.close(index);
+          window.location.href = 'login.html';
+        });
+      });
+
+      // ========== 側邊欄選單點擊 ==========
+      element.on('nav(sideMenu)', function (elem) {
+        // 先嘗試從 <a> 元素取得 lay-id
+        var layId = elem.attr('lay-id');
+        if (!layId) {
+          // 如果 <li> 沒有 lay-id，尋找子 <a> 上的 lay-id
+          var child = elem.find('> a[lay-id]');
+          if (child.length) {
+            layId = child.attr('lay-id');
+          }
+        }
+        if (!layId) return;
+
+        var title = elem.text().trim();
+
+        switch (layId) {
+          case 'dashboard':
+            // 顯示儀表板內容
+            var dashboardCards = contentArea.querySelectorAll('.dashboard-card, .layui-row');
+            dashboardCards.forEach(function(el) { el.style.display = ''; });
+            // 隱藏 iframe
+            var iframe = document.getElementById('userListFrame');
+            if (iframe) iframe.style.display = 'none';
+            layer.msg('已切換至儀表板', { icon: 1 });
+            break;
+          case 'user-list':
+            // 隱藏儀表板內容
+            var dashboardCards = contentArea.querySelectorAll('.dashboard-card, .layui-row');
+            dashboardCards.forEach(function(el) { el.style.display = 'none'; });
+            // 顯示 iframe
+            var iframe = document.getElementById('userListFrame');
+            iframe.src = 'user-list.html';
+            iframe.style.display = 'block';
+            break;
+          case 'user-role':
+            layer.msg('權限管理功能開發中', { icon: 0 });
+            break;
+          case 'sys-config':
+            layer.msg('基本設定功能開發中', { icon: 0 });
+            break;
+          case 'sys-log':
+            layer.msg('操作日誌功能開發中', { icon: 0 });
+            break;
+          default:
+            layer.msg('功能開發中：' + title, { icon: 0 });
+        }
+      });
+
+      // ========== 視窗大小變化時更新高度 ==========
+      $(window).on('resize', function () {
+        element.render();
+      });
+    });
+  </script>
+</body>
+</html>

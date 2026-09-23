@@ -1,0 +1,61 @@
+{
+  "spec_version": "1.0.0",
+  "base_url": "/api",
+  "endpoints": [
+    {
+      "id": "auth-login",
+      "method": "POST",
+      "path": "/auth/login.php",
+      "description": "User login with username/password. Returns session on success.",
+      "request": {
+        "content_type": "application/x-www-form-urlencoded",
+        "body": {
+          "username": "string (required, min 3 chars)",
+          "password": "string (required, min 6 chars)"
+        }
+      },
+      "response_success": {
+        "code": 0,
+        "msg": "login_success",
+        "data": {
+          "user_id": "int",
+          "username": "string",
+          "role": "string"
+        }
+      },
+      "response_error": {
+        "code": 1001,
+        "msg": "錯誤訊息 (帳密錯誤 / 參數缺失)"
+      }
+    },
+    {
+      "id": "auth-logout",
+      "method": "POST",
+      "path": "/auth/logout.php",
+      "description": "Destroy session, log out user.",
+      "request": {
+        "auth_required": true
+      },
+      "response_success": {
+        "code": 0,
+        "msg": "logout_success"
+      }
+    },
+    {
+      "id": "auth-check",
+      "method": "GET",
+      "path": "/auth/check.php",
+      "description": "Check current login status. Returns user info if logged in.",
+      "response_success": {
+        "code": 0,
+        "msg": "ok",
+        "data": {
+          "is_logged_in": "bool",
+          "user_id": "int|null",
+          "username": "string|null",
+          "role": "string|null"
+        }
+      }
+    }
+  ]
+}
