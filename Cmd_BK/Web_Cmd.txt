@@ -202,6 +202,11 @@ systemctl --user stop hermes-gateway-jl_lead.service（手動停）
 /home/vblinux/.hermes/profiles/vpos_lead/skills/vpos-delegation-workflow
 所以現在就查看相關規則 如果你現在也有相關缺陷 那就也將其整合到你的規範內 
 
+http://jashliao.uk/wordpress/
+http://jashliao.uk/yourls
+上面兩個網址是我的真實網站
+我現在想要自己手動佈署該專案到自己的vps上 
+所以現在寫一個小白也看得懂的佈署教學文件給我
 
 
 
@@ -211,7 +216,16 @@ systemctl --user stop hermes-gateway-jl_lead.service（手動停）
 sudo rm -rf /media/sf_VM/Hermes_BK 
 sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份
 
-
+查詢所用TOKEN:
+	SELECT 
+		SUM(input_tokens) AS total_input_tokens,
+		SUM(output_tokens) AS total_output_tokens,
+		SUM(reasoning_tokens) AS total_reasoning_tokens,
+		SUM(input_tokens + output_tokens + reasoning_tokens) AS grand_total_tokens
+	FROM sessions
+	WHERE datetime(started_at, 'unixepoch', 'localtime') 
+		  BETWEEN '2020-01-01 00:00:00' AND '2099-12-31 23:59:59';
+		  
 手動開啟 Hermes gateway[獨立終端機 只要一次]
 cd ~
 hermes gateway start
