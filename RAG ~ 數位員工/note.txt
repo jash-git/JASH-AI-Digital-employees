@@ -1,0 +1,12 @@
+RAG ~ 數位員工
+我的開發環境是AMD Ryzen AI Max+ 395 (128GB)的Windows11上有LM Studio 可以運行Qwn3.6-35B-A3B + LINUX(VM) 的 Hermes Agent 運行的環境
+我要如何在此基礎上實作出 一個專屬領域的諮詢專家如 產品客服/特定領域法律諮詢/...
+讓系統只在特定可擴充資料來源的知識庫內進行搜索與回復
+現在規劃出在VM內小白也能實作的完整步驟給我
+
+https://chatgpt.com/share/6ab62fea-bdc0-83ee-b9f7-b0585663f087
+https://share.gemini.google/WkTIBdTjjvag
+https://www.perplexity.ai/search/662757f3-2e0a-4679-a998-56745e40f1a8
+https://manus.im/share/wjxGwCA5uhZU1kxmdG50vZ
+https://www.kimi.ai/share/1a0d789b-eb12-8d59-8000-0000fe623140
+https://claude.ai/share/6fdf36ce-3ed0-40fe-bfb5-0558dd7ad76c
