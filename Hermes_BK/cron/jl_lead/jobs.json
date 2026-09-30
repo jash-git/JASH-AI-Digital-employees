@@ -1,4 +1,54 @@
 {
-  "jobs": [],
-  "updated_at": "2026-09-21T21:24:34.728004+08:00"
+  "jobs": [
+    {
+      "id": "327b76f58e72",
+      "name": "yifanzi-T10-watchdog",
+      "prompt": "你是 yifanzi 專案的 T10（DB Schema + SQL）Cron watchdog。監控子代理 deleg_c646be8b（sa-0-8f3cf71c，jl_php）是否仍在進行工作。\\n\\n檢查步驟：\\n1. 讀取 live transcript：`tail -20 /home/vblinux/.hermes/profiles/jl_lead/cache/delegation/live/deleg_c646be8b/task-0.log`\\n2. 檢查 `ls -la /home/vblinux/yifanzi/src/config/` 看 schema.sql / seed.sql / README.md 是否已產生。\\n3. 用 `cronjob_manage action='list'` 與 `delegate_task action='list'` 確認子代理狀態。\\n\\n判定：\\n- 若檔案尚未產生且 transcript 有活動 → 回報「進行中，等待產出」。\\n- 若檔案已產生（schema.sql/seed.sql/README.md 都在）→ 回報「完成，待主管驗證」。\\n- 若連續檢查無任何進展（transcript 停更、檔案沒長出來）→ 回報「疑似卡死」。\\n\\n不要修改任何檔案，只做監控與回報。\",\n<parameter=repeat>\n6",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "monitor_script": null,
+      "monitor_url": null,
+      "monitor_state": null,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 3,
+        "display": "every 3m"
+      },
+      "schedule_display": "every 3m",
+      "repeat": {
+        "times": null,
+        "completed": 2
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-09-30T10:24:24.004249+08:00",
+      "next_run_at": "2026-09-30T10:37:40.047262+08:00",
+      "last_run_at": "2026-09-30T10:34:40.047262+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "last_delivery_unverified": null,
+      "failure_streak": 0,
+      "deliver": "local",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": null,
+      "last_dispatch": {
+        "scheduled_at": "2026-09-30T10:32:58.118502+08:00",
+        "dispatched_at": "2026-09-30T10:33:08.727926+08:00",
+        "lateness_seconds": 10.6,
+        "kind": "on_time"
+      },
+      "fire_claim": null
+    }
+  ],
+  "updated_at": "2026-09-30T10:34:40.050661+08:00"
 }

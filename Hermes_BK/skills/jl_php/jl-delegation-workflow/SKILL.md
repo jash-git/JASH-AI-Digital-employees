@@ -361,6 +361,17 @@ PHP 層 skill → php+qa（ui 無 API 範圍故不發）。分發後務必 `ls` 
 6. **CDP Chrome 快取陷阱**：Apache curl 交付正確但瀏覽器結果不對時，先重啟 Chrome（kill + rm profile + 重啟）再實測，別懷疑程式碼。
 7. 前端任務完成 → 用 CDP/瀏覽器實測頁面能載入所需 JS、無 console error（curl 回 200 ≠ 瀏覽器可用）。
 
+### 逐模組部署驗證鐵律（2026-09-30 yifanzi 專案訂定——補 DoD 第 7 條的缺口）
+
+**背景**：DoD 第 4~7 條只涵蓋「源碼正確 + md5 src=deploy」，但沒有明訂「每個工具模組完成後都要實際部署到測試環境 + 瀏覽器實測該模組功能正常」。若等到最後 T19/T20 才一次驗證，iframe 路徑、JS 相對路徑斷裂、API 串接格式不對等整合問題會堆積到難以定位。
+
+**鐵律**：每個工具模組（前端頁 ↔ API）QA PASS 後、標 DONE 之前，jl_lead **必須親自**完成以下三件事，缺一不可：
+1. **部署到測試環境**：把該模組對應的 `src/` 檔案複製到 `.env` 的 `DEPLOY_TEST_PATH`（yifanzi = `/var/www/html`），確保 md5 src=deploy 一致。
+2. **瀏覽器實測該模組功能**：用 browser_exec / CDP Chrome 實際載入該工具頁，確認（a）無 console error、（b）API 請求回傳正確 JSON（`{code:0, msg, count, data}`）、（c）iframe 跳轉正常。（curl 回 200 ≠ 瀏覽器可用，不得只用 curl 斷言。）
+3. **標 DONE + qa_review="PASS"**：三件事都過才更新 task_board 為 DONE。若實測失敗 → 視為未完成，退回對應下屬修復。
+
+**與既有規則的關係**：這條是 DoD 第 4~7 條的「整合層」延伸——它要求的是「部署後在測試環境的实际功能驗證」，而非源碼層的 grep/md5。jl_qa 只做檔案層審查（DoD 1~3），部署+瀏覽器實測由 jl_lead 親自做（球員兼裁判禁令只禁止「Lead 自己當 QA 就標 DONE」，不禁止 Lead 自己做部署與功能實測——這是 Step 3 佈署流程的固有職責）。逐模組驗證 ≠ 每次都全站重跑 T20 全站連結巡檢，而是每個模組完成時各驗一次該模組。
+
 ## 參考文件（references/）
 - `php-layui-pitfalls.md`：PHP API + Layui 表格/Ajax 的完整陷阱對照與驗證腳本。
 - `task-board-lifecycle.md`：task_board.json 三階段生命周期與 JSON 更新注意事項。
