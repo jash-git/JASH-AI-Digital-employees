@@ -94,6 +94,25 @@ layui.use(['form'], function(){
 
 > ⚠️ 教訓來源：2026-09-16 T-33 tool 頁對齊修復，yinyuan/ziwei/hehun 三檔的 fillMonths/fillDays 原本寫在 callback 外，form.render('select') 把已填選項洗成空（monthOpts=0）。移到 callback 內後修復。
 
+### table.render 用本地 data:[] + done 回調會觸發競態（recordsTable 尚未賦值就 return）
+
+當 `table.render` 使用**本地陣列 `data:[]`**（非 `url` AJAX），Layui table 對本地資料是「同步渲染」——`done` 回調在 `table.render()` **回傳之前**同步觸發。若 `done` 內部呼叫的函數依賴「由 `table.render()` 回傳後才賦值的變數」（如 `recordsTable = table.render({...})`），此時該變數仍是 `null`，而該函數開頭若有防呆（如 `if (!recordsTable) return;`）會**直接 return → 資料永遠不載入**。
+
+**症狀**：API GET 正常回傳 `{code:0,count,data:[...]}`，但表格顯示 0 筆、`#records-table tbody tr` = 0、innerHTML 長度 = 0、console error = 0（錯誤被防呆吞掉）。
+
+**正確做法**：把 `done` 延後執行，等 `table.render()` 回傳、變數賦值後才呼叫：
+```javascript
+recordsTable = table.render({
+  elem: '#records-table',
+  data: [],          // 本地資料 → 同步渲染
+  cols: [[...]],
+  done: function () { setTimeout(loadRecords, 0); }   // ✅ 延後，recordsTable 已賦值
+});
+```
+（不要嘗試 `done: function(){ var self = recordsTable; ... }`——此時 recordsTable 仍是 null。`setTimeout(fn, 0)` 是最穩解法，等同步渲染完成、assign 結束後才執行。）
+
+**檢查清單**：任何用本地 `data:[]` + `done` 回調的 table.render，確認 done 內呼叫的函數不依賴「table.render() 回傳後才賦值的變數」；若依賴，done 必須用 `setTimeout(fn, 0)` 延後。
+
 ### 跨模組全域變數引用要一致（window.X vs 裸 L）
 
 多個獨立 `.js` 檔案透過 `global`/`window` export 資料時，**引用端必須用同一個命名空間**。若 `lunar.js` 用 `global.Lunar = Lunar` export，則 `bazi.js` / `app.js` 都要用 `window.Lunar.xxx`（或先在該檔案內 `var L = window.Lunar`），**不能直接用裸變數 `L.xxx`**——因為全域只有 `window.Lunar`，沒有全域 `L`。裸 `L.isLeap(y)` 在頁面載入時會拋 `TypeError: Cannot read properties of undefined (reading 'isLeap')`，且若該行在函式內被包住，錯誤可能讓整個初始化流程中斷（後續 option 全沒產生）。

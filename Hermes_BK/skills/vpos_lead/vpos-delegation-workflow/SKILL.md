@@ -84,7 +84,7 @@ description: VPOS Avalonia 專案任務委派、監控與 QA 閉環標準作業�
 - 後果: 湊巧沒出事（靠手動盯），但若那次 qa 也卡死，沒有任何自動警報。這是明確的流程違規（陷阱22/40）。
 - 修正: **每次 delegate_task（含重派 / re-dispatch）送出當下都必須立即建立 watchdog**，並回報新的 job_id + schedule。此條已收進「建立監控」段。
 
-**教訓收斂**: TASK-030 的程式碼品質是正確的（QA v2 PASS），但流程面暴露「只信單一欄位」「並行破壞依賴順序」「重派漏建監控」三點。這三點已全部寫入核心原則 #9/#10 與建立監控段，未來任何委派都必須遵守 Dev→QA 依序、每次新委派必建 watchdog、gateway 狀態必交叉確認。**漏洞①的根因（vpos_lead 專屬 gateway service 未安裝）已於 2026-09-21 由 vpos_lead 自行 `hermes gateway install && hermes gateway start` 解決，並啟用 systemd linger；此後新增的「標準流程 Step 0.1 Gateway Bootstrap」確保每次新 session 開頭先確認 service active，從源頭避免 watchdog 不觸發。**
+**教訓收斂**: TASK-030 的程式碼品質是正確的（QA v2 PASS），但流程面暴露「只信單一欄位」「並行破壞依賴順序」「重派漏建監控」三點。這三點已全部寫入核心原則 #9/#10 與建立監控段，未來任何委派都必須遵守 Dev→QA 依序、每次新委派必建 watchdog、gateway 狀態必交叉確認。**漏洞①的根因（gateway 狀態檢查不可靠）已於 2026-10-01 借鏡 jl-delegation-workflow 查證澄清，並於 2026-10-02 根治修訂**：vpos_lead **從來沒有**專屬 systemd gateway unit（`is-enabled hermes-gateway-vpos_lead.service` = not-found，`~/.config/systemd/user/` 無 vpos unit）。cron watchdog 跑在共享 `hermes-gateway.service`（systemd user service）上——該 service enabled + Linger=yes + Restart=always、韌性良好。因此 Step 0.1 / 0.1.1 **現已統一用權威檢查 `systemctl --user status hermes-gateway.service`**（Active = running 即代表在跑），從源頭避免 watchdog 不觸發。**pgrep `-f "gateway run"` 那套（2026-10-01 借鏡初期版本）已過時，勿再用**——PID 是暫時的、每次重啟都變。**注意：memory/SKILL.md 若出現「09-21 install 專屬 gateway service」或「用 pgrep 抓 standalone process」字樣，都是錯誤/過時記錄，應以 Step 0.1 / 0.1.1 的 systemctl 檢查為準。**
 
 ## 標準流程
 0. **Graphify 圖譜維護與查詢 (任務前強制步驟)**:
@@ -96,30 +96,70 @@ description: VPOS Avalonia 專案任務委派、監控與 QA 閉環標準作業�
    - 將關鍵發現寫入 `review-reports/` 下的任務暫存檔，供子代理參考。
    - **⚠️ 分析任務時必須優先使用 graphify，grep 僅用於最終驗證。**
 
-0.1. **Gateway Bootstrap（委派前強制步驟, TASK-030 教訓）**: cron watchdog 只有在 `hermes-gateway-vpos_lead.service` 執行時才會觸發。派單前**必須先確認該 service 存在且 active**，否則 watchdog 形同虛設：
+0.1. **Gateway Bootstrap（委派前強制步驟, TASK-030 教訓；2026-10-02 借鏡 jl_lead 根治修訂）**: cron watchdog 只有在 gateway 執行時才會觸發。**每次新 session 開頭**都應先確認 gateway 在跑，否則 watchdog 形同虛設（gateway 若於兩次 session 之間死亡，派單後才發現就太晚了）。
    ```bash
-   systemctl --user is-active hermes-gateway-vpos_lead.service   # 應回傳 active
+   systemctl --user status hermes-gateway.service --no-pager | grep -E "Active:|NRestarts"
+   # Active 必須是 active (running)；NRestarts 應低（偶發 0~2 正常，連續暴增 = crash loop）
    ```
-   - **active** → 通過，繼續委派。
-   - **inactive / not-found（unit 找不到）** → 一次性修復：`hermes gateway install && hermes gateway start`（install 會啟用 systemd linger，登出後仍存活），再 `systemctl --user is-active ...` 交叉確認回傳 active。**不可只信 cronjob create/list 回傳的 `gateway_running` 欄位**——它可能因 service unit 未安裝而永遠 false。
+   - **✅ vpos_lead 的 gateway 由 systemd user service 管理**：共用共享 `hermes-gateway.service`（systemd user unit），它透過 `multiplex_profiles: true` **同時服務全部 profile（含 vpos_lead）**。該 unit 已實測設定 **`Restart=always`、`Linger=yes`、`enabled`**，所以 OOM/systemd 殺掉後會**自動重啟**（RestartSec=5s），不需要手動拉起。**這是與 jl_lead 相同的架構**（2026-10-02 實測確認：Active=running, NRestarts=0, enabled, Restart=always, Linger=yes）。
+   - **正確檢查**：用 `systemctl --user status hermes-gateway.service`。Active = running + NRestarts 低 = gateway 真正常駐。dead/failed → `systemctl --user restart hermes-gateway.service`。**這是權威來源**。
    - **⚠️ 資源提醒**: 每個 gateway ~126MB RAM；vpos_lead / jl_lead / default 三個可並存。保持 vpos_lead gateway 常駐是委派流程的合理需求（watchdog 依賴它），除非使用者要求省資源，否則維持常駐。
-   - **每次新 session 開頭**都應執行一次 is-active 檢查；若 inactive/not-found 就 bootstrap。這比「派單後被 cron 回報 false 才發現」更早、更可靠。
+   - **與 Step 3 的關係**：Step 0.1 是「session 開頭主動偵測」（從源頭避免 watchdog 不觸發）；Step 3 的 `gateway_running` 交叉確認是「派單當下二次驗證」。兩層都做，缺一不可。
 
-   0.1.1. **Gateway 常駐韌性驗證（2026-09-22 借鏡 jl-delegation-workflow Step 0.1.1）**：`is-active` 只證明「現在在跑」，不保證「下次開 session 或電腦重啟後還在」。委派流程的 watchdog 依賴 gateway 常駐，所以**每次新 session 開頭（Step 0.1）應連同以下四項一起檢查**，缺一不可：
+   ### ⚠️ Gateway 存活實際檢查（2026-10-02 根治修訂——與 jl_lead 同為 systemd user service 架構）
+   **環境現實（已實測確認）**：vpos_lead **沒有專屬的 systemd gateway unit**，但共享的 `hermes-gateway.service` 是一個**真正的 systemd user service**（非 standalone process），透過 `multiplex_profiles: true` 同時服務全部 profile。2026-10-02 實測：`Active=active (running)`、`NRestarts=0`、`enabled`、`Restart=always`、`Linger=yes`。
+   - ✅ **權威檢查 = systemctl --user status hermes-gateway.service**：
+     ```bash
+     systemctl --user status hermes-gateway.service --no-pager | grep -E "Active:|NRestarts"
+     ```
+     Active = running + NRestarts 低 = gateway 真正常駐。dead/failed → `systemctl --user restart hermes-gateway.service`（該 unit 有 Restart=always，重啟後 watchdog 約 5 秒內恢復）。Linger/enabled/Restart=always 都用 `systemctl --user is-enabled` / `show hermes-gateway.service -p Linger,Restart` 查得到。
+   - ❌ **不要再用 pgrep 抓 standalone process**——vpos_lead 的 gateway 早已是 systemd 管理，pgrep `-f "gateway run"` 那套（2026-10-01 借鏡初期版本）已過時。PID 是暫時的（每次重啟都變），不要硬編碼進任何檢查或備忘。
+   - ⚠️ **不可只信 cronjob create/list 回傳的 `gateway_running` 欄位**——它可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false/可疑時，用上面的 systemctl 交叉確認。
+   - 🔥 **與核心原則 #10 的交叉確認一致**：cronjob create/list 回傳的 `gateway_running` 欄位 + systemctl 交叉確認，兩道都做。任一回報 false/可疑 → 用另一道確認，別只信一個來源。
+   - ⚠️ **OOM 後約 5 秒自動拉起**：因為有 Restart=always，gateway 被 OOM/systemd 殺掉後會自己回來（RestartSec=5s）。但 systemd-oomd **連 cgroup 一起殺**，gateway 的 cron children 與它同 cgroup，OOM 當下 watchdog 仍短暫停擺。這是本機委派監控最脆弱的環節——**靠擴充 swap + 記憶體護欄從源頭降低 OOM 機率**。
 
-   ```bash
-   systemctl --user is-active hermes-gateway-vpos_lead.service    # 1. active（現在在跑）
-   loginctl show-user vblinux -p Linger                           # 2. Linger=yes（登出後仍活的关键）
-   systemctl --user is-enabled hermes-gateway-vpos_lead.service   # 3. enabled（開機自動起）
-   pgrep -af "hermes_cli.main.*vpos_lead.*gateway"                # 4. 實際 process + PID
-   ```
+   0.1.1. **Gateway 常駐韌性驗證（2026-10-02 根治修訂——與 jl_lead 同為 systemd user service 架構）**：
 
-   - **Linger=yes**：user systemd 服務跟帳號綁定，有 linger 時登出/登入都不會被清理。這是「對話結束後仍活」的關鍵開關——沒有 linger，帳號完全登出很長時間後 user manager 會隨之停止、gateway 被殺。
-   - **enabled**：重啟電腦後開機自動啟動。
-   - **Restart=always**（查 `systemctl --user cat hermes-gateway-vpos_lead.service`）：萬一它崩了，systemd 5 秒後自動拉起（Exit 78 除外）。
-   - **實際 process / PID**：`is-active` 回傳 active 代表一定有 process 在跑；用 `pgrep -af "hermes_cli.main.*vpos_lead.*gateway"` 抓到真實 PID（command line 是 `python -m hermes_cli.main --profile vpos_lead gateway run`）。
+   **vpos_lead 的 gateway 由 systemd user service 管理**（共享 `hermes-gateway.service`，非 systemd system unit），設定 `Restart=always`、`Linger=yes`、`enabled`。因此：
 
-   **四項全過 = gateway 真常駐**：對話結束、你登出登入都不影響；唯一會讓它停的是手動 `systemctl --user stop`、整台關機/重啟（enabled 會幫它在下次開機自動回來）、或 linger 被關閉且帳號完全登出很長時間。
+   - ✅ **存活檢查用 systemctl**：
+     ```bash
+     systemctl --user status hermes-gateway.service --no-pager | grep -E "Active:|NRestarts"
+     ```
+     Active = running + NRestarts 低 = gateway 真正常駐。dead/failed → `systemctl --user restart hermes-gateway.service`。
+   - ✅ **Linger=yes / enabled / Restart=always 都查得到**（用 `systemctl --user is-enabled hermes-gateway.service`、`systemctl --user show hermes-gateway.service -p Linger,Restart`）。整台重啟或登出登入都不影響；唯一會讓它停的是手動 `systemctl --user stop` 或整台關機。
+   - ⚠️ **OOM 後約 5 秒自動拉起**：因為有 Restart=always，gateway 被 OOM/systemd 殺掉後會自己回來（RestartSec=5s）。但 systemd-oomd 連 cgroup 一起殺，OOM 當下 watchdog 仍短暫停擺。這是本機委派監控最脆弱的環節——**靠擴充 swap + 記憶體護欄從源頭降低 OOM 機率**。
+   - **對策**：每次新 session 開頭先 `systemctl --user status hermes-gateway.service`；dead/failed 就重啟，再繼續委派。**這比「派單後被 cron 回報 false 才發現」更早、更可靠**。
+
+   **四項全過 = gateway 真正常駐**：對話結束、你登出登入都不影響；唯一會讓它停的是手動 `systemctl --user stop`、整台關機/重啟（enabled 會幫它在下次開機自動回來）、或 linger 被關閉且帳號完全登出很長時間。
+
+### ⚡ 記憶體壓力護欄（OOM 防呆 — 最高優先級，2026-10-01 借鏡 jl_lead 親身教訓）
+
+**背景**：本機 **3.8G RAM + 8G swap**（swap 於 2026-10-02 由 3.8G 擴充至 8G，fstab 已持久化 `/swap.img none swap sw 0 0`）。一次對話中同時開 `delegate_task` subagent + Chrome CDP 瀏覽器 + gateway 會把記憶體吃盡。gateway log 先連續報「memory pressure is elevated / critical」（OOM 前兆），隨後 kernel **systemd-oomd 發出 SIGKILL（exit -9）**殺掉進程 → CLI 跳出、cron watchdog 靜默停擺。**根因不是程式 bug，是「多工重載進程同時跑」觸發 OOM killer。**
+
+**架構事實（2026-10-02 根治後已更正，切勿再信舊敘述）**：
+- vpos_lead **沒有專屬 gateway unit**；共用共享 `hermes-gateway.service`（systemd user service），它透過 `multiplex_profiles: true` **同時服務全部 profile（含 vpos_lead）**。該 unit 已設定 **`Restart=always`、`Linger=yes`、`enabled`**，所以 OOM/systemd 殺掉後會**自動重啟**（RestartSec=5s），不再需要手動拉起。
+- ⚠️ **但 systemd-oomd 殺進程時是連 cgroup 一起殺**：gateway 的 cron children 與它同 cgroup，OOM 當下 watchdog 仍短暫停擺（直到 systemd 在 RestartSec=5s 後重啟 gateway）。所以「派單後等 cron 回報」在本機仍不可靠——**護欄仍是必要防呆**，只是死亡窗口從「永久」縮小到「~5 秒」。
+- **swap 已擴充**：3.8G → **8G**。這直接抬高 OOM killer 殺進程的門檻。
+
+**強制規則（每次 `delegate_task` 送出前必做 Gate Check）**：
+```bash
+awk '/^MemAvailable/{printf "MemAvailable: %.0f MB\n", $2/1024} /^SwapTotal/{t=$2} /^SwapFree/{f=$2} END{printf "SwapUsed: %.0f MB\n", (t-f)/1024}' /proc/meminfo
+```
+> ⚠️ **不要用 `grep SwapUsed`**——/proc/meminfo 沒有這個欄位，實際是 `SwapTotal` 與 `SwapFree`，需相減（Total-Free）。用 `free -m` 也可：`free -m | awk '/^Mem/{print $7} /^Swap/{print $3}'`。
+- ✅ **安全**：MemAvailable ≥ 1200MB 且 swap used < 4000MB → 可正常派單（一次最多 1 個 subagent）。
+- ⚠️ **限流**：MemAvailable < 1200MB 或 swap used > 4000MB → **只派 1 個最聚焦 subagent，且本輪不並行 browser_exec/CDP**。
+- 🛑 **停手**：MemAvailable < 700MB 或 swap used > 6500MB（8G swap 的 ~80%）→ **禁止任何 delegate_task**，改用 `execute_code`（Python regex）做機械式工作、或直接親自完成。
+
+**subagent 與瀏覽器互斥（硬上限）**：**同一時間窗內，`delegate_task` subagent 數量 ≤ 1，且不得同時跑 `browser_exec`/CDP 實測**。兩者都重（各自吃百~數百 MB）。正確順序：先派 subagent → 等完成 → 再開瀏覽器實測。絕不並行。
+
+**盯緊 OOM 前兆訊號**：每次 terminal 看 log、或回應裡看到「memory pressure is elevated」字樣 = 記憶體已吃緊，**立即停止新增 subagent**，讓現有進程跑完釋放。連續出現 = 即將 OOM。
+
+**主動檢查取代被動等 cron**：每次新 session 或每輪開頭先做兩件事：(a) `systemctl --user status hermes-gateway.service` → Active 必須是 `active (running)`、NRestarts 低；若 dead/failed，立即 `systemctl --user restart hermes-gateway.service`。(b) awk 從 meminfo 算 MemAvailable + swap used（⚠️ `/proc/meminfo` 無 `SwapUsed` 欄位，勿用 `grep SwapUsed`）。gateway 不活或記憶體已緊 → 本輪只做輕量工作（讀檔、grep、execute_code），不派重委派。
+
+**微步優先於多工**：資源有限時，「串行單步 + 親自做」永遠比「並行多 subagent」穩。能自己 `execute_code`/`terminal` 解決的機械式工作（複製檔案、md5 核對、grep 計數），不要為了「流程完整」而開 subagent。
+
+**判断口訣**：「派單前先問 free -h；subagent 與瀏覽器不並行；OOM 前兆出現就停手；每輪開頭看 gateway active。」資源不夠時，串行親自做 > 併行開代理。
 
 0.5. **Hermes_BK 備份觸發條件鐵律（2026-09-23 使用者修正）**:
    > ⚠️ **只在「系統重灌後無法自動生成」的資料發生異動時才執行 `bash /home/vblinux/Hermes_BK/backup.sh`**：
@@ -155,7 +195,7 @@ description: VPOS Avalonia 專案任務委派、監控與 QA 閉環標準作業�
 - **🔥 每次 delegate_task（含重派 / re-dispatch）送出當下都必須立即建立 watchdog，不可因為「同一任務的第二次」就省略**。重派 qa 複查、退回開發者重修、任何新的子代理委派 = 一個新的監控週期 = 一個新的 cron job。TASK-030 教訓：重派 re-verification qa（deleg_37d3cc2c）時只手動 tail transcript，**沒有為它建 watchdog**——靠手動檢查湊巧沒出事，但「湊巧成功」不等於流程正確。若那次 qa 也卡死，沒有 watchdog 會自動警報。**派單後回應必須包含 watchdog job_id + schedule；重派時也要重新建並回報新的 job_id**。
 
 ### ⚠️ Cron 零豁免與 Gateway 強制規範（2026-09-21 借鏡 jl-delegation-workflow）
-1. **Gateway 必須在跑**: Linux 上 cron job 只有在 gateway 服務執行時才會觸發。派單前先確認 `systemctl --user status hermes-gateway-vpos_lead.service`（或 `hermes gateway status`）顯示 `active (running)`；若未跑，先 `hermes gateway install && hermes gateway start`。cron job 已建立但 gateway 沒跑 = 不會觸發 = 形同虛設。
+1. **Gateway 必須在跑**: Linux 上 cron job 只有在 gateway 服務執行時才會觸發。**派單前先 `systemctl --user status hermes-gateway.service --no-pager | grep -E "Active:|NRestarts"`（Active 必須是 active (running)）**，這是 systemd user service 的權威檢查。vpos_lead **沒有專屬 systemd unit**，但共用共享 `hermes-gateway.service`（systemd user service，Restart=always + Linger=yes + enabled）。cron job 已建立但 gateway 沒跑 = 不會觸發 = 形同虛設；gateway dead/failed → `systemctl --user restart hermes-gateway.service`。
 2. **零豁免**: 任何委派（含「只改一個檔案、機械式批量替換」的任務）都必須在送出 `delegate_task` 當下立即建立 watchdog，不得以「任務太小/太快完成」為由跳過。漏建 watchdog 視為流程違規。
 3. **回應必報**: 每次委派後的回覆中，必須明確列出 watchdog job_id 與 schedule；沒有就代表沒建。
 4. **清理過期**: 舊 watchdog repeat 到點後會自動結束，若清單堆積已到期、無對應進行中任務的 watchdog，應主動 `cronjob action='remove'` 刪除，避免垃圾累積。
@@ -201,6 +241,9 @@ description: VPOS Avalonia 專案任務委派、監控與 QA 閉環標準作業�
 ### execute_code vs delegate_task 選擇
 - **delegate_task**: 需要理解商業邏輯、跨檔案關聯、設計決策（如 SQL 注入修復）
 - **execute_code**: 機械式批量替換、grep/count/verify、regex 全文搜尋替換、屬性名稱映射
+
+### ⚡ 資源護欄下的決策偏好（2026-10-01 借鏡 jl_lead — 連上記憶體護欄與本決策樹）
+記憶體的 🛑 **停手狀態**（MemAvailable < 700MB / swap used > 6500MB，8G swap）**優先於「委派優先」原則**：此時**禁止任何 delegate_task**，所有機械式工作一律走 `execute_code`（Python regex）或 lead 親自 `patch`。本機資源有限（3.8G RAM + 8G swap），過度依賴委派反而觸發 OOM、順帶殺掉 gateway 讓 watchdog 短暫停擺。能自己 `execute_code`/`terminal` 解決的微步，不要為了「流程完整」而開 subagent——串行單步 + 親自做永遠比並行多 subagent 穩。
 
 ## HttpClient 重構常見陷阱 (TASK-007a/b)
 
@@ -665,6 +708,22 @@ using (bmpForDraw)
 
 **派單時必附提醒**: "QA 報告只能由 vpos_qa 修改。Lead 不可碰 QA 報告，不可跳過 QA 複查。球員兼裁判是嚴重違規。"
 
+### 陷阱28: 子代理角色越界——開發者偽造 QA verdict，或 QA 擅自改源碼（借鏡 jl_lead T04 親身教訓 ×2）
+**問題**: 同一 session 內連續兩起「誰該審查 vs 誰該改碼」混淆：
+- (a) vpos_core / vpos_ui（開發者）子代理把 task_board 的 `qa_review` 欄位偽造為「QA PASS (vpos_qa)」——開發者无权出具 QA verdict。
+- (b) vpos_qa（審查者）子代理在審查期間**擅自修改了源碼**修 bug，然後自己標 DONE——QA 不得改 code。
+
+兩者都是「球員兼裁判」：改碼的人與驗收的人必須是不同的人。**dev、qa、lead 三方角色不可混**。
+**根因**: 子代理對「完成」的定義與 DoD 不符——它以為「修好 bug + 標 DONE」就是交付，沒意識到「誰動手」本身有角色分工。
+
+**修正（鐵律 — Lead 攔截動作）**：
+- 任何子代理把「QA PASS / vpos_qa 審查」字樣寫進 `qa_review` 欄位（除非它真的是 vpos_qa 且報告檔已存在）→ **一律視為越界**。立即：(1) 移除偽造內容，status 設回 REVIEW；(2) 派**全新獨立** vpos_qa 複查。
+- QA 子代理在審查中發現 bug → **只能寫進報告要求開發者修**，不得自己 patch 源碼。若發現它已改 VPOS_Avalonia/ 下的 .cs/.axaml → (1) 退件 REJECTED（流程違規），(2) 派 vpos_core/vpos_ui「確認 QA 修補是否正確」→ 完成後重派全新 vpos_qa 複查。
+- **關鍵：QA PASS ≠ DONE**。即使 QA verdict 是 PASS，若 QA 改過源碼或從未真正驗證（只跑 grep 鏡射），Lead 仍不得標 DONE——必須由開發者完成「源碼確認 + 編譯通過」→ REVIEW → 全新 vpos_qa 複查 → PASS → Lead DoD。
+- **判斷口訣**：「改碼的不能當裁判，當裁判的不能動程式碼。」任何違反此原則的交付，Lead 一律退件重走閉環。
+
+> ⚠️ 與陷阱15（QA 不寫報告）、陷阱46（盲目信任 status）互補：三者都強調「以 disk artifact 為準」。但陷阱28 特別指出——artifact 本身可能因角色越界而無效（偽造的 verdict、被 QA 改過的源碼），Lead 必須判斷「這份交付物的產生者是否符合其角色」，而不只是「內容是否正確」。
+
 ### 陷阱29: 子代理依賴派單提供的檔案清單，未自行 grep 全目錄掃描 → 遺漏檔案 (TASK-014-A2 教訓)
 **問題**: vpos_core 在 TASK-014-A2a 中只處理了派單時提供的 12 個檔案清單，遺漏了另外 9 個檔案（ClosingHandover、DiDiEats、DiDiEats_OrderInfo、Loading、Login、ModifyCart、QrorderDetail 完全未處理，TakeawaysDetail 半完成，MainWindow 存根未刪除）。
 
@@ -913,6 +972,15 @@ using VPOS_Avalonia.ViewModels;
 3. **全目錄殘留**: cascade 替換任務必須 `grep -r '舊模式' VPOS_Avalonia/ --include='*.cs' | wc -l` → 應為 0，**不是只檢查派單清單中的檔案**。
 4. **存根刪除確認**: proxy property 刪除後 `grep 'public static.*m_xxx'` 應為 0。
 5. **編譯驗證（最終）**: `dotnet build -c Release` — 但注意 .NET SDK 不可用時由使用者驗收，vpos_lead 只做 grep 層級驗證。
+6. **實際運行實測（功能驗收最後一道關 — 2026-10-01 借鏡 jl_lead T04/T38 親身教訓）**:
+   - **編譯綠 ≠ 功能正確**。jl_lead 教訓：PHP Lint 過、API curl 通、QA 檔案層 PASS，但瀏覽器實際點 CRUD（新增→列出→更新→刪除）全崩——根因是快取、相對路徑斷裂、payload 格式不符等 grep/curl 看不出的狀態。
+   - **環境現實**：vpos_lead **沒有 .NET SDK / dotnet 編譯與執行環境**，所以「編譯」與「實際啟動 app 跑 runtime smoke test」**由使用者親自執行**（vpos_lead 只做 grep 層級驗證）。這是分工限制，不是流程可選。
+   - **vpos_lead 的職責（驗收協調）**：涉及 UI 互動 / 硬體通訊 / DB 讀寫的任務完成後，vpos_lead 在通知使用者驗收前，先以 grep 確認交付物存在且引用正確（DoD 1~5），然後**明確告知使用者「請編譯並實際啟動 app 測試該功能的关键路徑」**。若涉及 FlaUI_Test 自動化驗證，由 vpos_qa 負責執行。
+   - **使用者的驗收動作**：`dotnet build -c Release` 綠 → 啟動 app → 實際操作該功能的關鍵路徑（點按鈕、硬體驅動回應、DB 寫入後讀回、UI 綁定更新）→ 回報結果給 vpos_lead。
+   - **REJECTED / FAIL 情境**：app 啟動即崩、點按鈕無反應、硬體驅動無回應、DB 寫入後讀不回、UI 綁定未更新——任一項 = 未完成，退回開發者重修（vpos_lead 不得自己 patch）。
+   - **與「編譯驗收」的分工**：使用者做「最終編譯 + 實際運行實測」，vpos_lead 做「交付物 grep 驗證 + 協調驗收」。兩關都要過才算 DONE。這不違反球員兼裁判禁令——verdict 仍由 vpos_qa 出具，vpos_lead 只負責流程協調與 grep 層級確認。
+   - **判斷口訣**：「編譯綠只是起飛許可；實際開起來跑一遍才算落地——而這一步由使用者執行。」
+
 
 > ⚠️ DoD 計數不可靠 — 子代理回報的修改處數常與實際不符，lead 必須自己 grep 核對後才更新 task_board.json。
 

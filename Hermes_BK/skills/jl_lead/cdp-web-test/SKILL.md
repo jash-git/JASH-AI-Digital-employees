@@ -98,6 +98,8 @@ The script navigates, waits for load, and reports option counts + any JS errors.
 ## Pitfalls
 
 - **403 WebSocket handshake** — Chrome rejects CDP connections unless launched with `--remote-allow-origins=*`. If `websocket.create_connection` raises `WebSocketBadStatusException: Handshake status 403 Forbidden`, restart Chrome with that flag. This is a launch-flag problem, not a code bug.
+- **Multi-page testing: reuse one target + `Page.navigate`, don't create a tab per URL.** `/json/new/<url>` returns HTTP 405 in some Chrome builds (the high-level `browser_exec` daemon can also IPC-timeout while Chrome is fine). To sweep many pages, grab the first existing page target's `webSocketDebuggerUrl` from `/json`, open one WebSocket, and call `Page.navigate(url=...)` to hop between pages — draining console events after each load. This avoids the 405 entirely and keeps a single error stream.
+- **A page can render with zero JS errors yet use no library at all.** A `Solar:false` / `typeof X === 'undefined'` result is not automatically a bug — some pages (e.g. solar-time) compute client-side without importing the shared lib. Confirm against the source (`grep -iE "lunar.js|Solar\." page.html`) before flagging it.
 - **Do NOT use `print()` inside `browser_exec` js()** — it times out in the harness. When using CDP directly from Python (via `terminal`), `print()` works fine; the timeout was specific to the browser-harness JS wrapper.
 - **CDP `Runtime.evaluate` return values are reliable only when read via `returnByValue=True`.**
 - **Interleaved events**: after enabling Runtime/Console, socket reads may return event objects before your method responses. The drain loop in step 3 handles this — never assume the first recv is your answer.

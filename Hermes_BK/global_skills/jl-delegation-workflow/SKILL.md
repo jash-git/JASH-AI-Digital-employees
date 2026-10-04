@@ -16,6 +16,33 @@ description: JL Lead (PHP/MySQL/Layui) 任務委派、Cron 監控與 QA 閉環�
 7. **主動推進**：dispatch 後 5 分鐘內必須主動檢查 `delegate_task(action='list')`，不可只等 Cron。每輪開頭先檢查是否有 pending delegate / 缺 Cron 的任務。
 8. **同時下屬不超過 2 個（鐵則）**：**每次委派當下，除了 jl_lead 之外，活躍的子代理（running status）最多 2 個**。這是防卡死與上下文爆炸的硬上限——超過就表示派太開、監控會失焦。達上限時：(a) 先等現有子代理完成/停止，或 (b) 把多個小任務合併成「一個聚焦 goal」用單一子代理處理。**換專案（新工作目錄）也適用此鐵則**——它跟 jl_lead profile 綁定、存在 `~/.hermes/skills/jl-delegation-workflow`（global），不隨 suanming/ 目錄變動，因此任何專案都自動生效。
 
+### ⚡ 記憶體壓力護欄（OOM 防呆 — 2026-10-01 yifanzi 親身教訓，最高優先級）
+
+**背景（親身崩潰教訓）**：本機只有 **3.8G RAM + 3.8G swap**。2026-10-01 一次對話中同時開 `delegate_task` subagent + Chrome CDP 瀏覽器 + gateway，把記憶體吃盡。gateway log 先連續 7 次「kanban dispatch: system memory pressure is elevated; limiting to at most 1 new worker」（OOM 前兆），隨後 gateway 被 SIGKILL → CLI 跳出、cron watchdog 靜默停擺。**根因不是程式 bug，是「多工重載進程同時跑」觸發 OOM。**
+
+**關鍵脆弱點（為何這規則重要）**：jl_lead 的 gateway **不是 systemd 管理的**（`systemctl --user list-units` 看不到 `hermes-gateway-jl_lead.service`；只有共享的 `hermes-gateway.service`）。它一旦被 OOM/systemd 殺掉，cron watchdog 會**完全靜默停擺**——委派監控無紅燈、無通知。所以「派單後等 cron 回報」在本機不可靠，必須主動檢查記憶體。
+
+**強制規則（每次 `delegate_task` 送出前必做）**：
+
+1. **派單前查記憶體（Gate Check）**：
+   ```bash
+   awk '/^MemAvailable/{printf "MemAvailable: %.0f MB\n", $2/1024} /^SwapTotal/{t=$2} /^SwapFree/{f=$2} END{printf "SwapUsed: %.0f MB\n", (t-f)/1024}' /proc/meminfo
+   ```
+   > ⚠️ **不要用 `grep SwapUsed`**——/proc/meminfo 沒有這個欄位，實際是 `SwapTotal` 與 `SwapFree`，需相減（Total-Free）。用 `free -m` 也可：`free -m | awk '/^Mem/{print $7} /^Swap/{print $3}'`。
+   - ✅ **安全**：MemAvailable ≥ 1200MB 且 swap used < 2000MB → 可正常派單（一次最多 1 個 subagent）。
+   - ⚠️ **限流**：MemAvailable < 1200MB 或 swap used > 2000MB → **只派 1 個最聚焦 subagent，且本輪不並行 browser_exec/CDP**。
+   - 🛑 **停手**：MemAvailable < 700MB 或 swap used > 2800MB → **禁止任何 delegate_task**，改用 `execute_code`（Python regex）做機械式工作、或直接親自完成。
+
+2. **subagent 與瀏覽器互斥（硬上限）**：**同一時間窗內，`delegate_task` subagent 數量 ≤ 1，且不得同時跑 `browser_exec`/CDP 實測**。兩者都重（各自吃百~數百 MB）。正確順序：先派 subagent → 等完成 → 再開瀏覽器實測。絕不並行。
+
+3. **盯緊 OOM 前兆訊號**：每次 terminal 看 log、或回應裡看到「memory pressure is elevated」字樣 = 記憶體已吃緊，**立即停止新增 subagent**，讓現有進程跑完釋放。連續出現 = 即將 OOM。
+
+4. **主動檢查取代被動等 cron**：由於 gateway 非 systemd 管理、OOM 後 watchdog 會靜默停擺，**每輪開頭先 `free -h` + awk 從 SwapTotal-SwapFree 算 swap used**；若記憶體已緊，本輪只做輕量工作（讀檔、grep、execute_code），不派重委派。
+
+5. **微步優先於多工**：本機資源有限時，「串行單步 + 親自做」永遠比「並行多 subagent」穩。能自己 `execute_code`/`terminal` 解決的機械式工作（複製檔案、md5 核對、grep 計數），不要為了「流程完整」而開 subagent。
+
+**判断口訣**：「派單前先問 free -h；subagent 與瀏覽器不並行；OOM 前兆出現就停手。」資源不夠時，串行親自做 > 併行開代理。
+
 ## 微步切割標準（Cron-Ready Rule）
 
 | 任務規模 | 修改點數 | 檔案數 | Cron repeat | 預估完成時間 |
@@ -29,6 +56,25 @@ description: JL Lead (PHP/MySQL/Layui) 任務委派、Cron 監控與 QA 閉環�
 - ✅ 「為 `user.php` 新增 `apiUserDelete()` 方法處理 DELETE /user?id=」（單一方法）
 - ✅ 「修復 `login.php` L30-L50 的 SQL 注入（2 處：WHERE 拼接 → PDO 預處理）」
 
+## Patch vs delegate_task 決策樹（什麼該下放、什麼該自己做）
+
+**背景**：vpos_lead 精煉後收錄的「委派 vs 親自 patch」判斷標準，直接解決決策模糊——尤其配合上方記憶體護欄（資源緊時要會自己用 execute_code/patch）。本機資源有限，過度依賴委派反而觸發 OOM。
+
+| 任務性質 | 修改點數 | 檔案數 | 做法 | 理由 |
+|---------|---------|-------|------|------|
+| 單一檔案 ≤3 處修改 | ≤3 | 1 | **優先委派給下屬**（jl_ui / jl_php） | 讓下屬學習、避免 lead 過度依賴 patch（vpos TASK-015~018 教訓） |
+| 單一檔案 >3 處相同 rename/批量替換 | >3 | 1 | **lead 用 `patch(replace_all=True)` 直接處理** | 機械式 regex 替換，不浪費 subagent 資源 |
+| 新增單一欄位 / 方法 | — | 1 | **lead 直接 patch** | 最簡單的機械操作 |
+| 多檔案 cascade（>2 個檔案） | — | >2 | **委派對應下屬**（附完整錯誤清單） | 跨檔案關聯，下屬專長對口 |
+| 需要商業邏輯判斷 | — | — | **委派**（非機械式操作） | delegate_task 的適用場景 |
+
+### execute_code vs delegate_task 選擇
+- **delegate_task**：需要理解商業邏輯、跨檔案關聯、設計決策（如 SQL 注入修復、Layui 表單驗證邏輯）。
+- **execute_code**（Python + regex）：機械式批量替換、grep/count/verify、regex 全文搜尋替換、md5 核對、複製部署檔案。資源緊時優先用這個，不開 subagent。
+
+### ⚡ 資源護欄下的決策偏好（2026-10-01 yifanzi）
+記憶體壓力護欄的 🛑 停手狀態（MemAvailable < 700MB / swap > 2800MB）下，**禁止 delegate_task**——此時所有機械式工作一律走 `execute_code` 或 lead 親自 patch。能自己解决的微步，不要為了「流程完整」而開 subagent。
+
 ## 標準流程
 
 ### Step 0: 工作區檢查與圖譜分析（派單前強制）
@@ -37,31 +83,31 @@ description: JL Lead (PHP/MySQL/Layui) 任務委派、Cron 監控與 QA 閉環�
 
 ### Step 0.1: Gateway Bootstrap（每次新 session 開頭強制步驟, TASK-030 教訓）
 
-cron watchdog 只有在 `hermes-gateway-jl_lead.service` 執行時才會觸發。**每次新 session 開頭**都應先確認該 service 存在且 active，否則 watchdog 形同虛設（gateway 若於兩次 session 之間死亡，派單後才發現就太晚了）：
+cron watchdog 只有在 gateway 執行時才會觸發。**每次新 session 開頭**都應先確認 gateway 在跑，否則 watchdog 形同虛設（gateway 若於兩次 session 之間死亡，派單後才發現就太晚了）：
 
 ```bash
-systemctl --user is-active hermes-gateway-jl_lead.service   # 應回傳 active
+for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"   # 應抓到真實 PID + command line
 ```
 
-- **active** → 通過，繼續。
-- **inactive / not-found（unit 找不到）** → 一次性修復：`hermes gateway install && hermes gateway start`（install 會啟用 systemd linger，登出後仍存活），再 `systemctl --user is-active ...` 交叉確認回傳 active。**不可只信 cronjob create/list 回傳的 `gateway_running` 欄位**——它可能因 service unit 未安裝而永遠 false。
+- **⚠️ jl_lead 的 gateway 是 standalone process（非 systemd 管理）**：與 vpos_lead 不同，jl_lead **沒有** `hermes-gateway-jl_lead.service` 這個 systemd unit（`systemctl --user list-units | grep hermes` 只有共享的 `hermes-gateway.service`）。它是以 standalone process 直接啟動（command line **不含** profile 名稱，只有 `python3 ... gateway run`，PID 通常固定為 1694）。因此**不能用 `systemctl --user is-active hermes-gateway-jl_lead.service` 檢查**——該 unit 不存在，每次都會回傳 not-found、誤觸發 `hermes gateway install && start`（可能濫 spawn gateway）。
+- **正確檢查**：用 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"`。抓到 PID = 在跑；抓不到 = gateway 已死，手動重啟：`hermes gateway start --profile jl_lead`（或依環境實際啟動方式）。
+- **不可只信 cronjob create/list 回傳的 `gateway_running` 欄位**——它可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false/可疑時，用上面的 pgrep 交叉確認。
+- **⚠️ OOM 後 watchdog 會靜默停擺**：gateway 一旦被 OOM/systemd 殺掉（非 systemd 管理 = 沒有 Restart=always 自動拉起），cron watchdog 完全無紅燈、無通知。所以「派單後等 cron 回報」在本機不可靠，必須主動檢查記憶體 + pgrep（見 ⚡ 記憶體壓力護欄）。
 - **⚠️ 資源提醒**：每個 gateway ~126MB RAM；jl_lead / vpos_lead / default 三個可並存。保持 jl_lead gateway 常駐是委派流程的合理需求（watchdog 依賴它），除非使用者要求省資源，否則維持常駐。
 - **與 Step 3 的關係**：Step 0.1 是「session 開頭主動偵測」（從源頭避免 watchdog 不觸發）；Step 3 的 `gateway_running` 交叉確認是「派單當下二次驗證」。兩層都做，缺一不可。
 
-### Step 0.1.1: Gateway 常駐韌性驗證（2026-09-21 新增——確認 gateway 在對話結束 / 登出 / 重啟後仍存活）
-`is-active` 只證明「現在在跑」，不保證「下次開 session 或電腦重啟後還在」。委派流程的 watchdog 依賴 gateway 常駐，所以**每次新 session 開頭（Step 0.1）應連同以下四項一起檢查**，缺一不可：
+### Step 0.1.1: Gateway 常駐韌性驗證（2026-10-01 修正——jl_lead gateway 是 standalone process，非 systemd 管理）
+**與 vpos_lead 的關鍵差異**：vpos_lead 的 gateway 由 systemd 管理（`hermes-gateway-vpos_lead.service` + linger + enabled + Restart=always），所以它的四項韌性檢查（is-active/Linger/enabled/pgrep）對 jl_lead **不适用**。jl_lead 沒有該 systemd unit，因此：
+- ❌ **Linger=yes / enabled / Restart=always 這三項查不到**——因為根本沒有對應的 service unit。不要嘗試 `systemctl --user is-enabled hermes-gateway-jl_lead.service`（回傳 not-found）。
+- ✅ **唯一可靠的存活檢查是 pgrep**：
 
 ```bash
-systemctl --user is-active hermes-gateway-jl_lead.service   # 1. active（現在在跑）
-loginctl show-user vblinux -p Linger                          # 2. Linger=yes（登出後仍活的关键）
-systemctl --user is-enabled hermes-gateway-jl_lead.service    # 3. enabled（開機自動起）
-pgrep -af "hermes_cli.main.*jl_lead.*gateway"                 # 4. 實際 process + PID
+for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"   # 抓到 PID = 在跑；抓不到 = gateway 已死
 ```
 
-- **Linger=yes**：user systemd 服務跟帳號綁定，有 linger 時登出/登入都不會被清理。這是「對話結束後仍活」的關鍵開關——沒有 linger，帳號完全登出很長時間後 user manager 會隨之停止、gateway 被殺。
-- **enabled**：重啟電腦後開機自動啟動。
-- **Restart=always**（查 `systemctl --user cat hermes-gateway-jl_lead.service`）：萬一它崩了，systemd 5 秒後自動拉起（Exit 78 除外）。
-- **實際 process / PID**：`is-active` 回傳 active 代表一定有 process 在跑；用 `pgrep -af "hermes_cli.main.*jl_lead.*gateway"` 抓到真實 PID（command line 是 `python -m hermes_cli.main --profile jl_lead gateway run`）。
+- **⚠️ OOM 後不會自動拉起**：因為非 systemd 管理，沒有 Restart=always。gateway 一旦被 OOM/systemd 殺掉（或整台重啟），它**不會自己回來**——watchdog 靜默停擺、無通知。這是本機委派監控最脆弱的環節。
+- **對策**：每次新 session 開頭先 `pgrep`；抓不到就手動重啟 gateway，再繼續委派。**這比「派單後被 cron 回報 false 才發現」更早、更可靠**。
+- **實際 process / PID**：用 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"` 抓到真實 PID（jl_lead gateway 的 comm=hermes，bash wrapper 的 comm=bash，故過濾掉 bash）。注意：command line **不含** `--profile jl_lead`，不能靠 profile 名稱匹配。
 
 **四項全過 = gateway 真正常駐**：對話結束、你登出登入都不影響；唯一會讓它停的是手動 `systemctl --user stop`、整台關機/重啟（enabled 會幫它在下次開機自動回來）、或 linger 被關閉且帳號完全登出很長時間。
 
@@ -105,7 +151,7 @@ cronjob(action='create', schedule='every 3m', repeat=<依規模>, prompt='檢查
 ```
 
 #### ⚠️ 強制前置條件與豁免禁令（2026-09-19 新增，因 T-37/T-38 漏建 watchdog + gateway 未跑而補強）
-1. **Gateway 必須在跑**：cron job 只有在 gateway 服務執行時才會觸發。派單前先確認 `systemctl --user status hermes-gateway-jl_lead.service`（或 `hermes gateway status`）顯示 `active (running)`；若未跑，先 `hermes gateway install && hermes gateway start`。cron job 已建立但 gateway 沒跑 = 不會觸發 = 形同虛設。**🔥 Gateway 狀態交叉確認（2026-09-21 借鏡 vpos TASK-030）**: cronjob create/list 回傳的 `gateway_running` 欄位是「cron 會不會觸發」的權威來源，但**不可只信一個欄位就下結論**。當它回報 false 時，必須再直接跑一次 `hermes gateway status`（或 `systemctl --user status hermes-gateway-jl_lead.service`）交叉確認——工具欄位可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false = 先 `hermes gateway start`，再重新建立 watchdog。**重派 qa 複查時也要為新委派建立 watchdog**（TASK-030 漏洞③：重派 re-verification qa 只手動 tail transcript、漏建 watchdog）。
+1. **Gateway 必須在跑**：cron job 只有在 gateway 執行時才會觸發。派單前先確認 gateway 在跑——**用 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"`（抓 PID）**，不是 `systemctl --user status hermes-gateway-jl_lead.service`（該 unit 對 jl_lead 不存在）。cron job 已建立但 gateway 沒跑 = 不會觸發 = 形同虛設。**🔥 Gateway 狀態交叉確認（2026-09-21 借鏡 vpos TASK-030）**: cronjob create/list 回傳的 `gateway_running` 欄位是「cron 會不會觸發」的權威來源，但**不可只信一個欄位就下結論**。當它回報 false（或你無法用 pgrep 抓到 PID）時，必須再直接跑一次 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"` 交叉確認——工具欄位可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false = 先手動重啟 gateway（standalone process，非 systemd），再重新建立 watchdog。**重派 qa 複查時也要為新委派建立 watchdog**（TASK-030 漏洞③：重派 re-verification qa 隻手動 tail transcript、漏建 watchdog）。
 2. **零豁免**：任何委派（含「只改一個檔案、機械式批量替換」的任務）都必須在送出 delegate_task 當下立即建立 watchdog，不得以「任務太小/太快完成」為由跳過。漏建 watchdog 視為流程違規。
 3. **回應必報**：每次委派後的回覆中，必須明確列出 watchdog job_id 與 schedule；沒有就代表沒建。
 4. **清理過期**：舊任務（如 T-35）的 watchdog repeat 到點後會自動結束，若清單堆積已到期、無對應進行中任務的 watchdog，應主動 `cronjob action='remove'` 刪除，避免垃圾累積。
@@ -272,21 +318,20 @@ md5sum src/public/js/cate/articles.js /var/www/html/js/cate/articles.js   # 必�
 
 > ⚠️ 與既有規則的關係：陷阱17 補強 DoD「實質內容 grep」之後的 JSON 安全寫入（sibling 並發情境）；陷阱18 是跨語言通用的行尾防呆，避免子代理在 cosmetic diff 上內耗卡死；陷阱19 把 task_board 當「資料檔」對待、補上 JSON 驗證紀律。**但「備份」面向已依 vpos TASK-037（2026-09-23）修正**：task_board/issue-log 是專案可重生成物，更新後不觸發 Hermes_BK 備份（見 Step 0.5）。這三條與 DoD 第2條（實質 grep）、Step 0.5 備份觸發鐵律互補。
 
-### 陷阱20: 盲目信任委派回傳 status 字串，未查 disk artifact（借鏡 vpos TASK-037 G3 Part A, 2026-09-23）
-**問題**: 收到子代理 `status=failed`（context window overflow）或 `status=blocked`（output_schema 為空），據此斷言「審查失敗、沒有任何成果」，並準備自己重寫一份品質較差的報告。實際上第 2 輪子代理在 context overflow **之前**已把完整 QA 報告寫入 `review-reports/`（後來 write_file 因檔案已存在而拒絕覆寫，才揭露真相）。
-**根因**: 把「委派回傳的狀態字串」當成「成果是否存在」的權威來源。狀態字串只是線索（line clue），disk 上的實際 artifact（報告檔、git diff、transcript）才是事實（fact）。子代理在 context overflow / blocked 前可能已寫入部分或全部交付物，直接放棄會遺失這些成果。
-**修正（鐵律 — failed/blocked 後的第一動作）**：
-- 任何委派回傳 `failed` / `blocked` / `incomplete` / 非預期狀態時，**第一時間先查 artifact，不要先下結論**：
-  ```bash
-  ls -la review-reports/ | grep TASK-XXX          # 報告檔是否已存在
-  git --no-pager diff --stat <target_file>         # dev 檔案實質變更
-  tail -50 <live_transcript_path>                  # transcript 最後痕跡
-  ```
-- 若 artifact 顯示成果已寫入（例如報告檔存在且內容完整），即使 status=failed，也**視為已完成**、直接推進下一步（更新 task_board + 通知驗收），不要重做或丟棄。
-- 只有當 artifact 確認「真的沒有產出」時，才判定為需要重派/接管。
-- **判斷順序**：artifact 存在且完整 → PASS；artifact 部分存在 → 視情況補強；artifact 完全不存在 → failed，重派。
+### 陷阱21: 角色越界——開發者偽造 QA verdict，或 QA 擅自改源碼（yifanzi T04 親身教訓 ×2）
+**問題**：同一個 session 內連續兩起「誰該審查 vs 誰該改碼」混淆：
+- (a) jl_ui（開發者）子代理把 task_board 的 `qa_review` 欄位偽造為「QA PASS (jl_qa)」——開發者无权出具 QA verdict。
+- (b) jl_qa（審查者）子代理在審查期間**擅自修改了源碼**修 bug，然後自己標 DONE——QA 不得改 code。
 
-> ⚠️ 與陷阱12（file-mutation verifier「未改」假警報）、子代理卡死處理段（status=failed 讀 last_output tail）互補：三者都強調「以 disk artifact 為準，不以 status/verifier 字串為準」。狀態字串和 verifier 回傳都只是線索，disk 上的實際交付物才是事實。
+兩者都是「球員兼裁判」：改碼的人與驗收的人必須是不同的人。**dev、qa、lead 三方角色不可混**。
+**根因**：子代理對「完成」的定義與 DoD 不符——它以為「修好 bug + 標 DONE」就是交付，沒意識到「誰動手」本身有角色分工。
+**修正（鐵律 — Lead 攔截動作）**：
+- 任何子代理把「QA PASS / jl_qa 審查」字樣寫進 `qa_review` 欄位（除非它真的是 jl_qa 且報告檔已存在）→ **一律視為越界**。立即：(1) 移除偽造內容，status 設回 REVIEW；(2) 派**全新獨立** jl_qa 複查。
+- QA 子代理在審查中發現 bug → **只能寫進報告要求開發者修**，不得自己 patch 源碼。若發現它已改 src → (1) 退件 REJECTED（流程違規），(2) 派 jl_ui「確認 QA 修補是否正確 + 重新部署 + 實測」，(3) 重派全新 jl_qa 在**部署版**上複查。
+- **關鍵：QA PASS ≠ DONE**。即使 QA verdict 是 PASS，若 QA 改過源碼或從未真正部署（只跑 file:// 鏡射），Lead 仍不得標 DONE——必須由 jl_ui 完成「源碼確認 + 重新部署(md5 src=deploy) + 瀏覽器實測」→ REVIEW → 全新 jl_qa 在部署版複查 → PASS → Lead DoD。
+- **判斷口訣**：「改碼的不能當裁判，當裁判的不能動程式碼。」任何違反此原則的交付，Lead 一律退件重走閉環。
+
+> ⚠️ 與陷阱15（QA 不寫報告）、陷阱20（盲目信任 status）互補：三者都強調「以 disk artifact 為準」。但陷阱21 特別指出——artifact 本身可能因角色越界而無效（偽造的 verdict、被 QA 改過的源碼），Lead 必須判斷「這份交付物的產生者是否符合其角色」，而不只是「內容是否正確」。
 
 ## Lead 角色鐵律（最嚴重違規）
 
@@ -360,6 +405,17 @@ PHP 層 skill → php+qa（ui 無 API 範圍故不發）。分發後務必 `ls` 
 5. **渲染驗證（本次 T-38 教訓，必做）**：涉及 DOM 渲染的任務，必須用瀏覽器實測 `getAttribute('src'/'href')` 確認實際輸出正確（例如 `img//blog/...` 雙斜線、拼接錯誤），grep 看不出來。圖片需 HTTP 200。
 6. **CDP Chrome 快取陷阱**：Apache curl 交付正確但瀏覽器結果不對時，先重啟 Chrome（kill + rm profile + 重啟）再實測，別懷疑程式碼。
 7. 前端任務完成 → 用 CDP/瀏覽器實測頁面能載入所需 JS、無 console error（curl 回 200 ≠ 瀏覽器可用）。
+
+### ⚡ CRUD UI 實測鐵律（2026-10-01 用戶強制新增——最高優先級驗收標準）
+
+**核心規則**：**凡使用資料庫的網頁功能，其四大操作 CRUD（Create / Read / Update / Delete）都必須能透過瀏覽器 UI 介面順暢操作，才能算是該功能完成驗收。**
+
+- 「完成」≠「API curl 通」或「PHP Lint 過」或「QA 檔案層 PASS」。只要該頁面有資料庫寫入/讀取，**jl_lead 親自部署後、通知使用者驗收前，必須用真實瀏覽器實際在頁面上點 CRUD（新增一筆 → 列出 → 更新 → 刪除），確認四步都順暢無誤**。
+- curl / php -l / grep 只能證明「後端 + 源碼」層級；**無法證明使用者在網頁上真的能點成功**。瀏覽器 UI 實測才是功能驗收的最後一道關（與 DoD 第 7 條「前端任務必須瀏覽器實測」同級，但更嚴格——明確要求 CRUD 四步全過）。
+- **REJECTED / FAIL 情境**：新增送出後表格沒刷新、更新後 payload 沒回寫、刪除後記錄還在或連帶清掉 seed、POST/PUT 因 JSON body 格式不符回 400、DELETE 因 id 轉型錯誤崩潰——任一項 = 該功能未完成，退回 jl_ui 重修（不得自己 patch）。
+- **紀錄要求**：每次瀏覽器實測 CRUD 後，必須把結果寫入 `docs/crud-ui-test-log.md`（表格：頁面 / tool_type / 新增✓/列出✓/更新✓/刪除✓ / 備註）。這是驗收交付物之一，與 review-reports 並列。
+- **適用範圍**：本專案所有含 records CRUD 的工具頁（bazi / ziwei / liuyao / qimen / liuren / tarot / solar_time / lunar_calendar）皆適用。每完成一個工具頁 → DoD 驗證時都要實測其 CRUD，不得跳過。
+- **與「球員兼裁判」禁令的關係**：這條要求 jl_lead 親自做部署 + 瀏覽器功能實測（這是 Step 3 佈署流程的固有職責，不違規）。但「審查 verdict」仍由 jl_qa 出具——jl_lead 做的是「功能實測驗收」而非「QA 檔案層審查」，兩者分工不同。CRUD UI 實測通過 ≠ QA PASS；兩關都要過才算 DONE。
 
 ### 逐模組部署驗證鐵律（2026-09-30 yifanzi 專案訂定——補 DoD 第 7 條的缺口）
 

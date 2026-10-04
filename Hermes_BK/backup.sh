@@ -58,6 +58,17 @@ else
     echo "  ⚠ No global skills found"
 fi
 
+# Backup daytrade_scanner project (day-trade scanner tool)
+echo "[project] Backing up /home/vblinux/daytrade_scanner..."
+if [ -d "/home/vblinux/daytrade_scanner" ]; then
+    rm -rf "$BACKUP_ROOT/Code/daytrade_scanner"
+    mkdir -p "$BACKUP_ROOT/Code"
+    cp -r "/home/vblinux/daytrade_scanner" "$BACKUP_ROOT/Code/daytrade_scanner"
+    echo "  ✓ daytrade_scanner backed up to $BACKUP_ROOT/Code/"
+else
+    echo "  ⚠ No /home/vblinux/daytrade_scanner found"
+fi
+
 # Backup global memories
 echo "[2] Backing up global memories..."
 if [ -d "$GLOBAL_MEMORIES" ]; then
