@@ -7,3 +7,5 @@ Daytrade scanner project (/home/vblinux/daytrade_scanner/): v1 = scanner.py 純�
 v2 回溯 look-ahead bug：scanner_v2.scan_one_v2(code,name,cm,rows=None) 若 rows=None 會重新抓全歷史 Yahoo → 用到未來價。回溯必須傳入切片好的 rows（backtest_v2.py 用 slice_rows(rows,target_date)）。修好後 v1 與 v2 在 1~9月回溯結果完全相同：546入選/375觸發(69%)/獲利45%/毛利+1542/淨利+604.8。
 §
 原因（重要）：v2 籌碼層是「加分制」——只在 stock 已達技術面門檻(score≥45)之後才加 chumma_boost(外資買超+10/投信買超+10)，從未把低分股拉進清單。所以選股名單不變、結果一致。要讓籌碼真正影響選股得改邏輯：把籌碼當入選門檻 / 過濾達標股剔除外資大賣超 / 放大加權。比較文件：results/v1_vs_v2_比較報告.md。
+§
+daytrade_scanner 備份路徑（專案 /home/vblinux/daytrade_scanner）：(1) 原始錯誤版 universe.csv（30行、名稱全錯）保留於 /home/vblinux/Hermes_BK/Code/daytrade_scanner/universe.csv（10/3建立，root所有）。(2) 修正後完整專案壓縮備份在 /home/vblinux/Hermes_BK/daytrade_scanner_bk/daytrade_scanner_<timestamp>.tar.gz。universe.csv 已用 T86 官方中文名重校為 29檔（移除查無代號金鼎證）。改 universe 前先 tar czf 備份再動。

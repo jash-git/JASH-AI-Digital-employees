@@ -35,10 +35,13 @@ https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
 之後再去抓取2026/09/30的實際資料 進行對應比較 並回報你的工具的準確度有多少
 
 ~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~
 daytrade_scanner工具 [台股當沖]
 	跑昨天的選股 並告訴我 v1 和 v2 結果差多少 寫份完整報告給我
 	跑今天的選股 並告訴我 v1 和 v2 結果差多少 寫份完整報告給我
 ~~~~~~~~~~~~~~~~~~~
+
 sudo rm -rf /media/sf_VM/Hermes_BK 
 sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份
 
