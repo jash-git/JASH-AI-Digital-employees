@@ -17,6 +17,7 @@ tags: [finance, day-trade, taiwan-stock, scanner]
 | 做空估值 | ❌ | ✅ 外資大賣超時提供 |
 | 即時選股 | `bash run.sh` / `python3 scanner.py` | `python3 scanner_v2.py --top 10 --min-score 45` |
 | 回溯測試 | `backtest_sept2026.py --start-month N --end-month M` | `backtest_v2.py --start-month N --end-month M` |
+| 出場策略回溯 | `backtest_tp1half_tp2.py --tp tp1|tp2`（泛化腳本）+ `backtest_tp1half_tp2.py`（半倉拚TP2） | — |
 
 日常選股用 v1 就夠。要籌碼面或做回溯才用 v2。
 
@@ -70,6 +71,32 @@ volume_surge(25) + breakout_newhigh(25) + strong_close_high(15) + ma_bullish_sta
 ## 回溯結果基線（2026 1~9月）
 v1 = v2：546入選 / 375觸發(69%) / 獲利45% / +604.8元淨利(扣成本) / base rate 50%。完整分析見 results/v1_vs_v2_比較報告.md。
 
+## 出場策略回溯（同一批 485 筆觸發，無滑點/手續費）
+四種出場規則對照（2026-01~09，707入選、485觸發）。**最優模式 = TP1半倉拚TP2 保本版**。
+
+| 策略 | 勝率(全部觸發) | 勝率(僅TP/SL) | 累積PnL(元/股毛) | 平均每筆 | 盈亏比 |
+|------|--------------|--------------|-----------------|---------|--------|
+| TP1-only（全在TP1收） | 46.4% | 42.0% | +721 | +1.49 | 1.91 |
+| TP2-only（全跑TP2） | 44.5% | 34.2% | +1602 | +3.30 | 3.47 |
+| TP1半倉+拚TP2（原版，B用原停損） | 61.2% | 54.7% | +2457 | +5.07 | 2.31 |
+| **★最優：TP1半倉+拚TP2（保本版）** | **61.2%** | **59.2%** | **+2513** | **+5.18** | **2.35** |
+
+- TP1-only：`backtest_tp1_only.py --tp tp1` → results/backtest_tp1_01~09.csv + results/回溯報告_TP1-only_01~09.md
+- TP2-only：`backtest_tp1_only.py --tp tp2` → results/backtest_tp2_01~09.csv + results/回溯報告_TP2-only_01~09.md
+- TP1半倉+拚TP2（原版）：`backtest_tp1half_tp2.py`（每檔拆兩半倉，A在TP1收、B跑TP2）→ results/backtest_tp1half_01~09.csv + results/回溯報告_TP1半倉拚TP2_01~09.md
+- **★最優保本版**：原版 `evaluate()` 已內建保本邏輯（`b_sl = entry if a_hit_tp1 else sl`）→ A 在 TP1 賣掉後 B 停損上移到「保本=進場價」，達TP1者皆為贏。勝率(僅TP/SL)從54.7%升到59.2%、累積PnL +2457→+2513、盈亏比 2.31→2.35。結果檔同名覆寫（results/backtest_tp1half_01~09.csv），比較見 results/回溯報告_TP1半倉拚TP2_保本版_01~09.md
+- **最優模式關鍵洞察**：TP1那半倉先鎖利 → 勝率最高(61%)且停損筆數從231降到159（已鎖定利潤抵銷另一半虧損）；另一半拚TP2保留利潤上限；保本版再讓「達TP1的另一半」從可能被洗掉變成最多平手。毛損益未扣成本，實際淨利需再驗證。
+- ⚠️ 注意：`backtest_tp1_only.py` 的 f-string 在 patch 時易被吃掉 `{`（U+FF1A 全形冒號混入），改完務必 lint 確認。
+
+## 輸出檔案路徑（固定規則，別寫錯）
+**所有由本工具「產生」的報告檔一律放在 `results/` 子目錄**，不要散落在專案根目錄。
+- 選股報告：`results/報告_YYYYMMDD_v1_vs_v2.md`
+- 實盤驗證：`results/實盤驗證_YYYYMMDD.md`
+- CSV（v1/v2）：`results/scan_YYYYMMDD.csv`、`results/scan_v2_YYYYMMDD.csv`
+- 執行記錄 txt：`results/scan_run_*.txt`、`results/scan_v2_run_*.txt`
+- results/v1_vs_v2_比較報告.md、results/月度回溯報告_*.md、results/backtest_*_*.csv。
+- 出場策略回溯報告：results/回溯報告_TP1-only_01~09.md、results/回溯報告_TP2-only_01~09.md、results/回溯報告_TP1半倉拚TP2_01~09.md、results/回溯報告_TP1半倉拚TP2_保本版_01~09.md（★最優模式）。
+> 原因：`results/` 集中存放歷史選股與驗證檔，方便日後比對、回溯、備份。專案根目錄只留程式碼（scanner.py、scanner_v2.py、run.sh 等）與 README/使用手冊。
+
 ## 文件
 - README.md（開發者技術文件）、使用手冊.md（白話操作指南，含停損/停利範例、參考網址清單）。
-- results/v1_vs_v2_比較報告.md、results/月度回溯報告_*.md、results/backtest_*_*.csv。

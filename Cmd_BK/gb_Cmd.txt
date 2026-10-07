@@ -40,6 +40,12 @@ https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
 daytrade_scanner工具 [台股當沖]
 	跑昨天的選股 並告訴我 v1 和 v2 結果差多少 寫份完整報告給我
 	跑今天的選股 並告訴我 v1 和 v2 結果差多少 寫份完整報告給我
+	報告_20261005_v1_vs_v2.md 這是昨天的報告 以今天生盤價驗證一下 如果按照推薦執行 輸贏多少
+	
+	目前 daytrade_scanner和對應的skill 你回測了那麼多筆資料 如果不考慮滑點 且嚴格遵守 開倉+停損+TP1停利 規則 如此勝率是多少 賺多少
+	目前 daytrade_scanner和對應的skill 你回測了那麼多筆資料 如果不考慮滑點 且嚴格遵守 開倉+停損+TP2停利 規則 如此勝率是多少 賺多少
+	目前 daytrade_scanner和對應的skill 你回測了那麼多筆資料 如果不考慮滑點 且嚴格遵守 開倉+停損+TP1先停利一半+另一半拚TP2停利 規則 如此勝率是多少 賺多少
+
 ~~~~~~~~~~~~~~~~~~~
 
 sudo rm -rf /media/sf_VM/Hermes_BK 

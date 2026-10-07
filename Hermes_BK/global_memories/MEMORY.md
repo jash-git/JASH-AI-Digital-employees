@@ -9,3 +9,5 @@ v2 回溯 look-ahead bug：scanner_v2.scan_one_v2(code,name,cm,rows=None) 若 ro
 原因（重要）：v2 籌碼層是「加分制」——只在 stock 已達技術面門檻(score≥45)之後才加 chumma_boost(外資買超+10/投信買超+10)，從未把低分股拉進清單。所以選股名單不變、結果一致。要讓籌碼真正影響選股得改邏輯：把籌碼當入選門檻 / 過濾達標股剔除外資大賣超 / 放大加權。比較文件：results/v1_vs_v2_比較報告.md。
 §
 daytrade_scanner 備份路徑（專案 /home/vblinux/daytrade_scanner）：(1) 原始錯誤版 universe.csv（30行、名稱全錯）保留於 /home/vblinux/Hermes_BK/Code/daytrade_scanner/universe.csv（10/3建立，root所有）。(2) 修正後完整專案壓縮備份在 /home/vblinux/Hermes_BK/daytrade_scanner_bk/daytrade_scanner_<timestamp>.tar.gz。universe.csv 已用 T86 官方中文名重校為 29檔（移除查無代號金鼎證）。改 universe 前先 tar czf 備份再動。
+§
+T86 三大法人籌碼資料時效（twse.com.tw/rwd/zh/fund/T86）：scan_on_date_v2.py 首次跑可能抓到「有法人資料的標的：0 檔」（當日數據尚未釋出），稍後重跑或隔天才補齊。實測 2026-10-06：首跑 0 檔 → 重跑 18820 檔，且顯示兩檔外資大賣超（鴻海 -1998萬股、聯發科 -391萬股）→ v2 標「看空風險」，隔日(10/07)兩檔果然低開破損。v1/v2 差 0 時要先確認是「籌碼中性」還是「資料未出」，別誤判；v2 加分制只加不減、賣超只做提示不剔除達標股。
