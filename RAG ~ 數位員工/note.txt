@@ -10,3 +10,33 @@ https://www.perplexity.ai/search/662757f3-2e0a-4679-a998-56745e40f1a8
 https://manus.im/share/wjxGwCA5uhZU1kxmdG50vZ
 https://www.kimi.ai/share/1a0d789b-eb12-8d59-8000-0000fe623140
 https://claude.ai/share/6fdf36ce-3ed0-40fe-bfb5-0558dd7ad76c
+
+
+================
+
+上述 RAG 的區塊 可以使用 llm-wiki 取代嗎
+
+https://chatgpt.com/share/6ac9b8bf-0c04-83ec-8833-013aba47b1b6
+https://share.gemini.google/6pLfxYzKmUDR
+https://www.perplexity.ai/search/662757f3-2e0a-4679-a998-56745e40f1a8
+https://claude.ai/share/6fdf36ce-3ed0-40fe-bfb5-0558dd7ad76c
+
+
+================
+
+Hermes + Obsidian 
+https://www.youtube.com/watch?v=Piyn__g3MQQ
+https://www.youtube.com/watch?v=ZC8AI_jFWnU
+https://www.youtube.com/watch?v=ZC8AI_jFWnU
+
+我的開發環境是AMD Ryzen AI Max+ 395 (128GB)的Windows11上有LM Studio 可以運行Qwn3.6-35B-A3B + LINUX(VM) 的 Hermes Agent 運行的環境
+我要如何在此基礎上使用Hermes + Obsidian 製作 一個專屬領域的諮詢專家如 產品客服/特定領域法律諮詢/... 
+這樣可行嗎 如果可以就給我詳細的對應安裝設定步驟
+如果不可行 給我其他解決方案建議
+
+https://chatgpt.com/share/6ac9d218-6868-83ee-a877-a1a9a4e681a8
+https://share.gemini.google/ssYLA4YwrQsf
+https://www.perplexity.ai/search/5fcfe89e-ad8f-4f0f-98c1-538c091fc7b7
+https://grok.com/share/bGVnYWN5LWNvcHk_59ac006b-a507-4b54-9f9a-372d7b6656dc
+https://claude.ai/share/37e98ed5-59ec-4a54-95ca-e8d631d85401
+https://www.kimi.ai/share/1a1245df-f8f2-8924-8000-000014f49093
