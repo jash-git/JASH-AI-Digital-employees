@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-12",
+  "min_score": 45,
+  "top": 20,
+  "chumma_data_date": "2026-10-12",
+  "v1": [
+    {
+      "code": "4904",
+      "name": "遠傳",
+      "close": 106.0,
+      "score": 60,
+      "direction": "做多",
+      "entry": 106.3,
+      "sl": 105.2,
+      "tp1": 108.0,
+      "tp2": 109.1,
+      "rr1": 1.5,
+      "setup": "拉回找買點(策略B)"
+    },
+    {
+      "code": "2382",
+      "name": "廣達",
+      "close": 325.5,
+      "score": 50,
+      "direction": "做多",
+      "entry": 337.5,
+      "sl": 332.7,
+      "tp1": 344.6,
+      "tp2": 349.4,
+      "rr1": 1.5,
+      "setup": "拉回找買點(策略B)"
+    }
+  ],
+  "v2": [
+    {
+      "code": "4904",
+      "name": "遠傳",
+      "close": 106.0,
+      "score": 70,
+      "chumma_boost": 10,
+      "direction": "做多",
+      "entry": 106.3,
+      "sl": 105.2,
+      "tp1": 108.0,
+      "tp2": 109.1,
+      "rr1": 1.5,
+      "chumma_note": "看多（投信買超65.3萬股）",
+      "foreign_net": -7.5905,
+      "investor_net": 65.3
+    },
+    {
+      "code": "2382",
+      "name": "廣達",
+      "close": 325.5,
+      "score": 60,
+      "chumma_boost": 10,
+      "direction": "做多",
+      "entry": 337.5,
+      "sl": 332.7,
+      "tp1": 344.6,
+      "tp2": 349.4,
+      "rr1": 1.5,
+      "chumma_note": "看多（投信買超1.5萬股）",
+      "foreign_net": -131.5053,
+      "investor_net": 1.4611
+    }
+  ],
+  "summary": {
+    "v1_count": 2,
+    "v2_count": 2,
+    "both": 2,
+    "only_v1": 0,
+    "only_v2": 0
+  }
+}

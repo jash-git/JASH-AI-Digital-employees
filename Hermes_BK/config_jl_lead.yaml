@@ -249,13 +249,12 @@ command_allowlist:
   - pipe remote content to shell
 plugins:
   enabled:
+    - homeassistant
     - rtk-rewrite
+    - spotify
+  disabled: []
 security:
   redact_secrets: true
-  tirith_enabled: true
-  tirith_path: tirith
-  tirith_timeout: 5
-  tirith_fail_open: true
   website_blocklist:
     enabled: false
     domains: []
@@ -280,7 +279,7 @@ onboarding:
     busy_input_prompt: true
 computer_use:
   backend: cua
-_config_version: 49
+_config_version: 50
 session_reset:
   mode: none
   idle_minutes: 1440
@@ -349,6 +348,10 @@ known_plugin_toolsets:
   cli:
     - a2a
     - spotify
+  acp:
+    - homeassistant
+  webhook:
+    - homeassistant
 known_builtin_toolsets:
   cli:
     - browser
@@ -403,3 +406,8 @@ telemetry:
   shared_metrics:
     enabled: true
     send: true
+_left_core_scoped:
+  - homeassistant
+_left_core_installed:
+  - homeassistant
+  - spotify

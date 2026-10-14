@@ -40,7 +40,10 @@ https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
 daytrade_scanner工具 [台股當沖]
 	跑昨天的選股 並告訴我 v1 和 v2 結果差多少 寫份完整報告給我
 	跑今天的選股 並告訴我 v1 和 v2 結果差多少 寫份完整報告給我
-	報告_20261005_v1_vs_v2.md 這是昨天的報告 以今天生盤價驗證一下 如果按照推薦執行 輸贏多少
+	報告_20261005_v1_vs_v2.md 這是昨天的報告 以今天實際交易盤價驗證一下 如果按照推薦執行 輸贏多少
+	使用昨天的報告 配合實際交易盤價驗證一下 如果按照推薦執行 輸贏多少 並更新 報告_TP1半倉拚TP2_2026.md
+
+
 	
 	目前 daytrade_scanner和對應的skill 你回測了那麼多筆資料 如果不考慮滑點 且嚴格遵守 開倉+停損+TP1停利 規則 如此勝率是多少 賺多少
 	目前 daytrade_scanner和對應的skill 你回測了那麼多筆資料 如果不考慮滑點 且嚴格遵守 開倉+停損+TP2停利 規則 如此勝率是多少 賺多少
@@ -61,4 +64,5 @@ sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/
 	WHERE datetime(started_at, 'unixepoch', 'localtime') 
 		  BETWEEN '2020-01-01 00:00:00' AND '2099-12-31 23:59:59';
 
+source .venv/bin/activate
 hermes --yolo # --yolo 省去授權

@@ -32,6 +32,12 @@ python3 scanner_v2.py --top 10 --min-score 45     # v2: 含三大法人
 python3 backtest_v2.py --start-month 1 --end-month 9   # v2 回溯（每週抓 T86）
 ```
 
+## 對等比較 v1 vs v2（選股日相同，別直接用各自的 --date）
+v1(`scan_on_date.py`) 用 cutoff、v2(`scan_on_date_v2.py`) 用日期字串切片，**兩者對「某日收盤」的解讀會落在不同有效日期**（見已知坑 #6）。要公平比較同一天，必須讓兩套用**同一批棒線**：
+- 抓全 5y → `slice_rows(rows, "YYYY-MM-DD")` → v1 `scan_one(rows=sliced)` 與 v2 `scan_one_v2(rows=sliced)` 並跑。
+- 專案已有 `compare_v1_v2.py`（固定選最新「已收盤完整」交易日、對等切片後並印 v1/v2 + 差異對照）。
+- ⚠️ **比較前必做資料完整性檢查**：確認該日每檔都有真收盤。若某日全市場 close=None，v1/v2 會因日期错位比出「假差異」（見已知坑 #7、references/data_integrity_check.md）。
+
 ## 設計原則（對應 Gemini 文章《隔天開盤當沖選股策略與技巧》bzX3xC5vGBXU）
 四大金剛 → 自動化分級：
 1. 成交量/流動性 ✅ Yahoo OHLCV 算量/5日均量 + 最小張數。
@@ -67,6 +73,9 @@ volume_surge(25) + breakout_newhigh(25) + strong_close_high(15) + ma_bullish_sta
 3. datetime.timezone.utc：import 要帶 timezone，別用 datetime.UTC。
 4. Yahoo chart API 偶發 401/404 → 雙 host 容錯 + WARN 不中斷。
 5. backtest_v2.py 抓 T86 用「每週一次」而非每日（每日 ~18000行 × 195交易日會超時）。T86 每日更新、無跳號，每週採樣不會漏任何交易日的可用資訊。
+6. **cutoff vs 切片 → 有效日期不同**：v1 `scan_on_date.py` 用 `cutoff=YYYY-MM-DDT00:00Z`（UTC 午夜），但 Yahoo 把台股日棒時間戳設在開盤時（01:00 UTC = 09:00 CST）。UTC 午夜正好切在兩日之間，加上 Yahoo `period2` 放寬，v1 會抓到「下一支棒」（例如查 10-12 實際用到 10-13）；v2 依日期字串 `<= 10-12` 切片時若該日 close=None 被跳過，又會掉回更早日期。**兩套 --date 相同但選到不同日的資料 → 比出假差異**。修為用同一套 slice_rows 對等切片（compare_v1_v2.py）。
+7. **回溯/比較前不做資料完整性檢查**：feed 可能「昨天 close=None、今天卻有值」（真實 live 行情不可能發生，代表凍結／部分灌入的資料）。選股日若某日全市場 close=None，回溯會自動回退到更早的有效日而不自知。**修為先掃 universe 找「最新一支有效棒日期」與 None 缺口**（references/data_integrity_check.md），確認選股日真有收盤再比。
+
 
 ## 回溯結果基線（2026 1~9月）
 v1 = v2：546入選 / 375觸發(69%) / 獲利45% / +604.8元淨利(扣成本) / base rate 50%。完整分析見 results/v1_vs_v2_比較報告.md。

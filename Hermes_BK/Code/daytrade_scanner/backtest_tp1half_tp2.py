@@ -20,8 +20,15 @@ v1 與 v2 實際交易 PnL 完全相同（籌碼加分不改 entry/sl/tp，也�
 import argparse, csv, os
 from datetime import datetime, timezone, timedelta
 import scanner as S
+import data_source as DS   # 自動偵測 TWSE 最新已定案交易日（排除 Yahoo 未定案「今日」棒）
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+# ── 當沖費用（採法定/監管「最高值」）──
+#   買方：證券交易手續費0.145% + 交易所手續費0.0165%
+#   賣方：證券交易稅0.3%       + 證券交易手續費0.145% + 交易所手續費0.0165%
+RATE_BUY = 0.00145 + 0.000165            # 0.001615 (0.1615%)
+RATE_SELL = 0.003 + 0.00145 + 0.000165   # 0.004615 (0.4615%)
 
 
 def compute_range(start_month, end_month):
@@ -56,12 +63,40 @@ def slice_rows(rows, target_date):
     return [r for r in rows if r["date"] <= td]
 
 
-def get_next_bar(rows, after_date):
+def get_next_bar(rows, after_date, cap_date=None):
+    """抓 date 在 (after_date, cap_date] 的第一根棒（下一個「已定案」交易日實際行情）。
+
+    cap_date 用來排除 Yahoo 尚未定案的「今日」棒：只取到最新已定案日為止，
+    確保回溯不用未定案數據（look-ahead）。不給 cap_date 則退回舊行為。"""
     ad = after_date.strftime("%Y-%m-%d")
+    cstr = cap_date.isoformat() if cap_date is not None else None
     for r in rows:
-        if r["date"] > ad:
+        d = r["date"]
+        if d > ad and (cstr is None or d <= cstr):
             return r
     return None
+
+
+def trading_days_between(start_d, end_d):
+    """[start_d, end_d] 區間每個周一~周五（含首尾）。"""
+    days = []
+    d = start_d
+    while d <= end_d:
+        if d.weekday() < 5:   # Mon=0 .. Fri=4
+            days.append(d)
+        d += timedelta(days=1)
+    return days
+
+
+def last_complete_day():
+    """TWSE 權威最新已定案交易日（用 STOCK_DAY_ALL 決定，排除 Yahoo 未定案「今日」棒）。回傳 date 物件。"""
+    twse = DS.fetch_twse_latest_quotes()
+    if not twse:
+        return None
+    D = DS.determine_screen_date(twse)
+    if not D:
+        return None
+    return datetime.strptime(D, "%Y-%m-%d").date()
 
 
 def evaluate(sig, bar):
@@ -96,6 +131,12 @@ def evaluate(sig, bar):
         b = 0.5 * (c - entry); b_tag = "收"
 
     pnl = round(a + b, 2)
+    # 各半倉實際出場價（用於計算扣費）
+    a_exit = tp1 if a_hit_tp1 else (sl if l <= sl else c)
+    b_exit = tp2 if h >= tp2 else (b_sl if l <= b_sl else c)
+    # 當沖費用（法定/監管最高值）：買 entry×0.1615%、賣各半倉出場價×0.4615%
+    fee = entry * RATE_BUY + 0.5 * a_exit * RATE_SELL + 0.5 * b_exit * RATE_SELL
+    pnl_net = round(pnl - fee, 2)
     # 結果分類（優先級：TP2 > TP1>SL/收 > 全停損）
     if h >= tp2:
         outcome = "達TP1+達TP2"
@@ -106,19 +147,44 @@ def evaluate(sig, bar):
     else:
         outcome = "收盤了結"
 
-    return {"triggered": True, "pnl": pnl, "outcome": outcome, "profit": pnl > 0}
+    return {"triggered": True, "pnl": pnl, "pnl_net": pnl_net,
+            "outcome": outcome, "profit": pnl > 0, "profit_net": pnl_net > 0}
 
 
 def main():
     ap = argparse.ArgumentParser(description="TP1半倉停利+另一半拚TP2回溯（無滑點")
-    ap.add_argument("--start-month", type=int, default=1)
-    ap.add_argument("--end-month", type=int, default=9)
+    ap.add_argument("--start-month", type=int, default=1, help="窗口起始月（1-12），預設 1")
+    ap.add_argument("--end-month", type=int, default=None, help="固定月份回溯用：如 --end-month 9")
+    ap.add_argument("--end-date", help="截止日 YYYY-MM-DD（含）。不給則自動取 TWSE 最新已定案日，"
+                                       "即自动纳入迄今所有已 settled 的資料（如 10 月至今）")
     args = ap.parse_args()
 
-    start_day, end_day = compute_range(args.start_month, args.end_month)
     universe = S.load_universe(os.path.join(HERE, "universe.csv"))
-    days = trading_days(start_day, end_day)
-    print(f"[TP1半倉+TP2] {start_day.date()} → {end_day.date()}（不含），共 {len(days)} 個交易日")
+
+    # ---- 窗口截止日：--end-date > 自動偵測(TWSE最新已定案) > --end-month ----
+    if args.end_date:
+        end_cap = datetime.strptime(args.end_date, "%Y-%m-%d").date()
+        days = trading_days_between(datetime(2026, args.start_month, 1).date(), end_cap)
+        mode = f"指定截止 {end_cap}"
+    elif args.end_month:
+        sd, ed = compute_range(args.start_month, args.end_month)
+        days = trading_days(sd, ed)
+        end_cap = ed.date()
+        mode = f"固定月份 {args.start_month}~{args.end_month}"
+    else:
+        L = last_complete_day()
+        if not L:
+            print("✗ [停跑] 無法取得 TWSE 已定案交易日。請用 --end-date YYYY-MM-DD 指定，或稍後重跑。")
+            return
+        end_cap = L
+        days = trading_days_between(datetime(2026, args.start_month, 1).date(), L)
+        mode = f"自動(TWSE已定案日 {L})"
+
+    if not days:
+        print("✗ [停跑] 窗口內無交易日。")
+        return
+    print(f"[TP1半倉+TP2] {days[0]} → {days[-1]}（{mode}），共 {len(days)} 個交易日")
+    print(f"[TP1半倉+TP2] next-bar cap = {end_cap}（排除未定案「今日」棒）")
 
     full = {}
     for code, name in universe:
@@ -135,7 +201,7 @@ def main():
             r = S.scan_one(code, info["name"], rows=rows)
             if r is None:
                 continue
-            bar = get_next_bar(info["rows"], d)
+            bar = get_next_bar(info["rows"], d, end_cap)   # 下一個「已定案」交易日（cap 排除未定案今日棒）
             if bar is None:
                 continue
             res = evaluate(r, bar)
@@ -164,7 +230,7 @@ def main():
     loss_stopped = sum(r["pnl"] for r in stopped)
     close_pnl = sum(r["pnl"] for r in closed)
 
-    month_label = f"{args.start_month:02d}~{args.end_month:02d}"
+    month_label = f"{days[0].strftime('%Y%m%d')}~{days[-1].strftime('%Y%m%d')}"
     csv_out = os.path.join(HERE, f"results/backtest_tp1half_{month_label}.csv")
     txt_out = os.path.join(HERE, f"results/backtest_tp1half_{month_label}_summary.txt")
 
@@ -212,18 +278,30 @@ def main():
         if avg_loss != 0:
             print(f"盈亏比（获利均/亏损均绝对值）：{abs(avg_win/avg_loss):.2f}")
 
+        # ── 扣當沖費用後（法定/監管最高值：買0.1615%、賣0.4615%）──
+        total_pnl_net = sum(r.get("pnl_net", r["pnl"]) for r in triggered)
+        profitable_net = [r for r in triggered if r.get("pnl_net", 0) > 0]
+        resolved_all = hit_tp2 + tp1_then_breakeven + stopped
+        wr_net = len(profitable_net) / len(triggered) * 100
+        wr_res_net = sum(1 for r in resolved_all if r.get("pnl_net", 0) > 0) / max(1, len(resolved_all)) * 100
+        print("── 扣當沖費用後（法定/監管最高值：買0.1615%、賣0.4615%）──")
+        print(f"累積淨利：{total_pnl_net:+.2f} 元/股   （毛 {total_pnl:+.2f} → 扣費 {total_pnl - total_pnl_net:.2f}）")
+        print(f"淨勝率（分母=全部觸發）：{len(profitable_net)}/{len(triggered)} = {wr_net:.1f}%")
+        print(f"淨勝率（分母=僅明確TP/SL）：{sum(1 for r in resolved_all if r['pnl_net']>0)}/{len(resolved_all)} = {wr_res_net:.1f}%")
+        print(f"平均每筆觸發淨 PnL：{total_pnl_net/len(triggered):+.2f} 元/股")
+
     # ---- CSV ----
     os.makedirs(os.path.dirname(csv_out), exist_ok=True)
     with open(csv_out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["日期","次日","代號","名稱","分數","進場","停損","TP1","TP2",
-                    "次日開","次日高","次日低","次日收","是否觸發","結果","PnL(元/股)"])
+                    "次日開","次日高","次日低","次日收","是否觸發","結果","PnL(元/股,毛)","PnL(元/股,扣費後)"])
         for r in all_records:
             w.writerow([r["date"], r["next_date"], r["code"], r["name"], r["score"],
                         round(r["entry"], 2), round(r["sl"], 2), round(r["tp1"], 2), round(r["tp2"], 2),
                         r["o"], r["h"], r["l"], r["c"], r["triggered"],
                         r["outcome"] if r["triggered"] else "未觸發",
-                        r.get("pnl", "")])
+                        r.get("pnl", ""), r.get("pnl_net", "")])
     print(f"\nCSV 已存：{csv_out}")
 
     # ---- TXT ----
