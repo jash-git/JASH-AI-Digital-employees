@@ -1,7 +1,7 @@
 ---
 name: daytrade-scanner
 description: "跑 daytrade scanner(v1/v2)選股：TWSE當日源+Yahoo歷史+健康檢查。"
-version: 1.0.0
+version: 1.1.0
 author: Hermes Agent
 license: MIT
 platforms: [linux]
@@ -43,9 +43,9 @@ Use when running or improving the daytrade scanner at /home/vblinux/daytrade_sca
 ⚠ TWSE openapi 其他端點：路徑要對，正確是 `/v1/exchangeReport/...`、`/v1/fund/...`。打錯回 404 頁（非被擋）。
 ❌ wdata.tw：DNS 解析失敗。❌ Stooq：JS proof-of-work bot wall。⚠ TPEx 行情端點本環境回 404，且 universe 台股交所主板用不到。
 
-## 核心做法：A→B 資料備援 + settlement ceiling（Yahoo 主源、TWSE 備援）
+## 核心做法：A→B 資料備援 + A-first 選股日（Yahoo 主源、TWSE 備援）
 v1/v2 指標需多日歷史，TWSE 只給當天。screen_latest.py / compare_v1_v2_dated.py / data_source.py 的做法：
-1. `collect_yahoo_full()` 每檔抓 Yahoo 5y 歷史一次（主源 A）。`resolve_screen_date_union()` 取兩源全覆蓋最晚日為 D，但**不超過 TWSE 權威已定案日（settlement ceiling）**——避免用到未定案的當日線（look-ahead）。
+1. `collect_yahoo_full()` 每檔抓 Yahoo 5y 歷史一次（主源 A）。選股日 D = **A（Yahoo）已定案的最晚交易日**；TWSE（B）落後不降級 D，只在 Yahoo 缺棒時補位。`resolve_screen_date_a_first()`（守衛 `_is_day_settled`）的過收盤判定 只挡「未定案的當日線」（盘中/收盤剛過的 partial OHLC，避免 look-ahead），**不**因 TWSE 端點落後就把 D 往下退——只要 A 有完整已定案日線就用 A（符合『A 有資料就用 A；兩源都沒資料才不產報告』）。
 2. `gather_rows_union()` = Yahoo(<=D) + TWSE 填補 D 当天 Yahoo 缺的棒（備援 B）。TWSE 只在 Yahoo 缺棒時補位，不延伸 D。
 3. 守衛：兩源在 target date 都無有效收盤 → 「缺資料」停跑、不產出報告。
 4. v1.scan_one(rows) 與 v2.scan_one_v2(rows, cm) 用同一批資料 → 對等比較（結果與 compare --date <D> 完全一致）。
@@ -54,16 +54,27 @@ v1/v2 指標需多日歷史，TWSE 只給當天。screen_latest.py / compare_v1_
 - ⚠ 當沖回溯的 next-bar 只能用「已定案」行情：Yahoo 會先帶入未收盤的「今日」棒。`backtest_tp1half_tp2.py` 以 TWSE 已定案日為 cap 排除之；預設自動跑到最新已定案日，當 Yahoo 尚未釋出中間已定案棒時（如只跳到今日 partial）該段會自然跳過，等釋出後自動補進。
 - ⚠ UTC cutoff 時區 bug：scan_on_date.py 用 cutoff=目標日T00:00Z。台股日棒時間戳 01:00UTC=09:00CST，午夜 UTC 切到兩日之間、Yahoo period2 又放寬 → v1 實際抓到「次日」棒。回溯請用 screen_latest 的日期字串 <=D 切片法或傳切片 rows。
 - ⚠ look-ahead：scan_one_v2(code,name,cm,rows=None) 若 rows=None 會重抓全歷史用到未來價。回溯必傳切片好的 rows。
+- ⚠ **今日選股日 D = A（Yahoo）已定案最晚日，TWSE 落後不降級**：跑「今天的選股」只要 Yahoo 有完整當日線（收盤後即為已定案），D 就用它；TWSE `STOCK_DAY_ALL` 在本環境 date 參數被忽略、常落後一天，**不能**因此把 D 往下退成昨天。只有兩源在該日都無有效收盤才不產報告（守衛）。**screen_latest.py 現已 A-first**（`resolve_screen_date_a_first`，過收盤才取当日、盘中用昨日定案日），可直接跑今日選股；`compare_v1_v2_dated.py --date <D>` 則用於固定日期回溯/一致性報告（指定任意過去日、無天花板）。兩者對等、結果相同。
 - ✅ v2 籌碼分顯示修正：compare_v1_v2_dated.py 的「差異對照」原用 `V2分−V1分`（分數差），當 V2 達 100 上限會低估真實籌碼加分（如遠傳 85+25=110→100，顯示成 +15）。已改為讀 `chumma_boost` 欄位（scanner_v2 恒有）。screen_latest 一直用 chumma_boost，故兩者此前差 +10。
 - ✅ 策略A/B（突破vs拉回）：build_trade_plan 依 breakout_new_high 定進場價（A=前日高、B=收盤+0.3%）。它只透過「進場價」影響當沖回溯 PnL（entry/sl/tp1/tp2 本就用在 backtest_tp1half_tp2），不是獨立變因；screen_latest 與 compare 共用同一 scan_one，處理一致。報告顯示該標籤只是 metadata，不另改統計。
-- ✅ A→B 資料備援 + 守衛（compare / screen_latest 共用 data_source 輔助函式）：A=Yahoo 主源，B=TWSE STOCK_DAY_ALL 備援。`gather_rows_union()` = Yahoo(<=D) + TWSE 填補 D 当天 Yahoo 缺的棒；`resolve_screen_date_union()` 取兩源全覆蓋最晚日為 D，但**不超過 TWSE 權威已定案日（settlement ceiling）**——避免用到未定案的當日線（look-ahead）。守衛：兩源在 target date 都無有效收盤 → 印「缺資料」並停跑、不產出報告；只要有任一源有正確資料就產生對應文件。`collect_yahoo_full()` 用 rng=5y（與 compare 原始一致；1y 会掉臨界股）。
+- ✅ A→B 資料備援 + 守衛（compare / screen_latest 共用 data_source 輔助函式）：A=Yahoo 主源，B=TWSE STOCK_DAY_ALL 備援。`gather_rows_union()` = Yahoo(<=D) + TWSE 填補 D 当天 Yahoo 缺的棒；選股日 D = A（Yahoo）已定案最晚日（A-first，TWSE 落後不降級；D 決定見核心做法第 1 點），守衛(_is_day_settled) 只挡未定案當日線（look-ahead）。守衛：兩源在 target date 都無有效收盤 → 印「缺資料」並停跑、不產出報告；只要有任一源有正確資料就產生對應文件。`collect_yahoo_full()` 用 rng=5y（與 compare 原始一致；1y 会掉臨界股）。
 - ✅ 驗證（2026-10-13）：TWSE 停在 10/12、Yahoo 有 10/13 → fallback 正確解析到今日實際交易日；T86 當日籌碼也已釋出，無日期錯位。
 - v2 加分制：只加不減，名單與 v1 相同；外資大賣超只做「看空風險」提示不剔除。要讓籌碼真正影響選股得改邏輯（當門檻/剔除/加權）。
 - 比較 v1/v2 一定要對等資料日期，否則因日期错位得出假差異。
 - ⚠ 回溯數字會漂移：Yahoo 歷史棒會被後修，同一段期間每次重跑的入選筆數/勝率/獲利可能不同。把回測結果當「相對參考」而非固定事實；比較兩種規則時要用同一套資料抓取點才公平。
+- ⚠ **改中文報告用 ASCII anchor + regex**：`patch` 工具與 Python `str.replace` 都容易在繁體中文字符上 byte mismatch（手打的 CJK 與檔案內 bytes 不一致 → 0 match）。要改滿是中文的 md，用 ASCII 錨點 + `[^\n]*?`/`.*?` 通配跳過中文區（例如匹配 `1~10-12` 到 `56.2%` 之間的整句，中段中文用通配帶過），再對匹配結果只做數字 replace；或先 `read_file` 取原文確認字元再換。
+
+## 報告撰寫與實盤驗證（檔案分工）
+
+本專案的「績效主報告」與「每日實盤驗證」有固定分工，寫/更新報告時遵守：
+
+1. **主報告只放「跑動統計總數」**：`報告_TP1半倉拚TP2_2026.md` 這類主報告只承載累積統計（入選/觸發/勝率/累積毛·淨 PnL），隨已定案日延伸。**不要**把每日逐檔明细塞進主報告。
+2. **每日完整分析另存 dated 檔案**：每天的實盤驗證寫成 `results/驗證_YYYY-MMDD_選股執行結果.md`，格式沿用既有 `驗證_2026-10-13_選股執行結果.md`（判定規則→逐檔表+每檔敘述→總結果→誠實解讀→結論→附錄）。主報告「延伸至今日」小節只列總數並指回該 dated 檔案。
+3. **統計要「統計在一起」**：新資料要併進既有的「延伸至今日」（section 五）那張表，**不要**另開一個平行小節重複同樣的總數（會把同一套數字拆成兩份）。headline 數字同步更新到 section 一、費用解讀放 section 六。
+4. **回溯 vs 今日實盤是「互不重疊」直接加總**：`backtest_tp1half_tp2.py` 的 next-bar cap = TWSE 已定案日，抓不到尚未 settled 的「今日」棒；昨日推薦 → 今日實際成交正是回溯尚未涵蓋的那一段（D=選股日 → 下一根實際棒）。用同一套 `evaluate()` 判定後加總即「完整至今統計」。加總前**先確認無重疊**：檢查新 CSV 的 screen_date 是否已含該日（若已含＝已被回溯收掉，勿重複加）；TWSE 釋出該日後，重跑回溯會自然把當日收進窗口。
 
 ## 常用命令
-- 當日最新對等選股（screen_latest）：`python3 screen_latest.py [--top 15] [--min-score 45]` → results/screen_v{1,2}_<D>.csv。**已對齊 compare_v1_v2_dated 的切片基底**（純 Yahoo、按日期字串 <=D 公平切片；自動決定 D = 兩源全覆蓋最晚日但不超 TWSE 已定案天花板）。實測與 `compare_v1_v2_dated.py --date <D>` 結果完全相同（V1+V2 全部一致），兩者可互用。
+**- 當日最新對等選股（screen_latest）：`python3 screen_latest.py [--top 15] [--min-score 45]` → results/screen_v{1,2}_<D>.csv。**已對齊 compare_v1_v2_dated 的切片基底**（純 Yahoo、按日期字串 <=D 公平切片）。自動決定 D = **A（Yahoo）已定案的最晚交易日**（A-first，過收盤≥13:30 CST 才取当日；盘中回退至最近定案日），TWSE 落後不降級 D。實測與 `compare_v1_v2_dated.py --date <D>` 結果完全相同（V1+V2 全部一致），两者可互用。
 - **官方/一致性選股報告**：用 `python3 compare_v1_v2_dated.py --date <最新已定案日>` → results/compare_dated_<YYYYMMDD>.json，再依 results/選股報告_YYYY-MM-DD_v1_vs_v2.md 模板寫。**所有「選股報告_...」都用此法**（Yahoo 日期字串切片 ≤D、公平切片、無 look-ahead），保證日與日可比。
 - 指定日期回溯 v1：`python3 scan_on_date.py --date 2026-10-12`
 - 指定日期回溯 v2：`python3 scan_on_date_v2.py --date 2026-10-12`

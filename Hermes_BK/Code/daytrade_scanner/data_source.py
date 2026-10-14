@@ -16,6 +16,7 @@ import os
 import ssl
 import time
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 import scanner as S   # 复用 yahoo_chart / parse_bars
 
@@ -184,3 +185,48 @@ def resolve_screen_date_union(codes, yahoo_full, twse_quotes):
             combined[cc].add(q["date"])
     all_dates = sorted({d for cc in ccodes for d in combined[cc] if d <= bound}, reverse=True)
     return next((d for d in all_dates if all(d in combined[cc] for cc in ccodes)), None)
+
+
+# ---------------------------------------------------------------------------
+# A-first 選股日解析（2026-10-14 更新：以 Yahoo 主源已定案最晚日為準，TWSE 不再當天花板）
+# ---------------------------------------------------------------------------
+
+MARKET_CLOSE_CST = 13 * 60 + 30   # 台股收盤 13:30（分鐘）
+
+
+def _now_cst():
+    """目前台灣時間（UTC+8）。"""
+    return datetime.now(timezone(timedelta(hours=8)))
+
+
+def _is_day_settled(date_str, now_cst):
+    """date_str(YYYY-MM-DD) 是否為「已定案日」：
+       - 非未來日期；且（早於今日，或今日已过 13:30 收盤）。
+       → 盘中不取当日線，避免用到未定案的當日棒（look-ahead）。"""
+    today = now_cst.strftime("%Y-%m-%d")
+    if date_str > today:
+        return False
+    if date_str == today:
+        return (now_cst.hour * 60 + now_cst.minute) >= MARKET_CLOSE_CST
+    return True
+
+
+def resolve_screen_date_a_first(codes, yahoo_full, twse_quotes=None):
+    """A-first 選股日（Yahoo 為主源）：D = Yahoo 全覆蓋的最晚「已定案」交易日。
+       - TWSE 不再當天花板；僅在 gather_rows_union 補 D 缺棒時作备援（A→B）。
+       - 過收盤(≥13:30 CST)才視「今日」為定案；盘中回退到最近已定案日。
+       - 需所有 universe 檔於 D 皆有 Yahoo 有效收盤（維持 v1/v2 對等切片）。
+       - 完全無全覆蓋日 → None（不產報告，符合「兩源皆無資料則停跑」）。
+       （取代舊的 resolve_screen_date_union：後者以 TWSE 已定案日為天花板，TWSE 落後時
+        會錯誤地把 D 往下退，違反 A-first。screen_latest 現改用本函式。）"""
+    ccodes = [clean_code(c) for c in codes]
+    per_date = {cc: {r["date"] for r in yahoo_full.get(cc, []) if r.get("close") is not None}
+                for cc in ccodes}
+    covered_all = sorted(
+        {d for d in set().union(*per_date.values()) if all(d in per_date[cc] for cc in ccodes)},
+        reverse=True)
+    now_cst = _now_cst()
+    for d in covered_all:                       # 由晚到早，取第一個已定案日
+        if _is_day_settled(d, now_cst):
+            return d
+    return None                                 # 無已定案日 → 停跑不產報告

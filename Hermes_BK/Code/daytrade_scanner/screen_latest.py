@@ -4,7 +4,8 @@
 與 compare_v1_v2_dated.py **完全相同的切片基底**（純 Yahoo <=D，TWSE 填 gap）。
 資料取得（A→B 備援 + 守衛）：
   A = Yahoo（主源），B = TWSE STOCK_DAY_ALL（備援：填補 D 当天 Yahoo 缺的棒）。
-  D = 兩源合起來全覆蓋的最晚交易日；若完全無全覆蓋日 → 印「缺資料」並停跑，不產出報告。
+  D = Yahoo 全覆蓋的最晚「已定案」日（A-first，過收盤≥13:30 CST 才取当日；盘中回退至最近定案日）；
+     若完全無全覆蓋/已定案日 → None 停跑，不產出報告。
 用法：python3 screen_latest.py [--top 15] [--min-score 45]
 """
 import argparse
@@ -54,11 +55,11 @@ def main():
     print("[screen] 抓取 Yahoo 歷史（每档一次）…", file=sys.stderr)
     yahoo_full = DS.collect_yahoo_full([c for c, _ in universe])
 
-    # ---- 2. TWSE 備援（B）+ 決定 D：兩源合起來全覆蓋的最晚日 ----
+    # ---- 2. TWSE 備援（B）+ 決定 D：Yahoo 主源全覆蓋的最晚「已定案」日（A-first，過收盤才取当日）----
     twse = DS.fetch_twse_latest_quotes()                       # 備援 B
     print("[screen] TWSE fallback latest=%s" % (DS.determine_screen_date(twse) if twse else "無"), file=sys.stderr)
     ccodes = [DS.clean_code(c) for c, _ in universe]
-    D = DS.resolve_screen_date_union(ccodes, yahoo_full, twse)
+    D = DS.resolve_screen_date_a_first(ccodes, yahoo_full, twse)
     if not D:
         print("✗ [缺資料] 兩源(TWSE/Yahoo)均無 universe 全覆蓋的交易日，停止產出報告。")
         return

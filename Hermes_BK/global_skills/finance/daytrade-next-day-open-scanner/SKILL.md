@@ -100,7 +100,7 @@ v1 = v2：546入選 / 375觸發(69%) / 獲利45% / +604.8元淨利(扣成本) / 
 ## 輸出檔案路徑（固定規則，別寫錯）
 **所有由本工具「產生」的報告檔一律放在 `results/` 子目錄**，不要散落在專案根目錄。
 - 選股報告：`results/報告_YYYYMMDD_v1_vs_v2.md`
-- 實盤驗證：`results/實盤驗證_YYYYMMDD.md`
+- 實盤驗證（選股報告 × 實際盤價）：`results/實盤驗證_YYYYMMDD.md`——做法見 `references/live-verification.md`（收盤後抓隔日已定案棒、套 evaluate()、未觸發不算虧）。
 - CSV（v1/v2）：`results/scan_YYYYMMDD.csv`、`results/scan_v2_YYYYMMDD.csv`
 - 執行記錄 txt：`results/scan_run_*.txt`、`results/scan_v2_run_*.txt`
 - results/v1_vs_v2_比較報告.md、results/月度回溯報告_*.md、results/backtest_*_*.csv。

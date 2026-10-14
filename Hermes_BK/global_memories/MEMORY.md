@@ -2,7 +2,7 @@ Playwright single-arrow-function-arg wrapping quirk: when calling page.evaluate(
 §
 Long-running downloads in terminal() get KILLED when the foreground call times out at 420s (process-group kill). Fix: double-fork daemonize so it survives — os.fork()>0 → _exit(0); os.setsid(); os.fork()>0 → _exit(0); then dup fds to log file. Verified working for missav HLS download (survived multiple separate terminal polls). Alternative: use terminal(background=true) which tracks the process itself.
 §
-daytrade_scanner專案: openapi STOCK_DAY_ALL(/v1/exchangeReport/STOCK_DAY_ALL)路徑正確(POST回200);?date=被忽略是設計(文件明訂只回最新一期快照),非bug。實測它單邊落後TWSE主站:2026-10-13當日它只到10/12,但T86已有10/13(20035檔)→Yahoo fallback(screen_latest resolve_screen_date)為正解。
+daytrade_scanner: TWSE STOCK_DAY_ALL 本環境 date 參數被忽略、常落後一天(固定回最新已定案日,非 bug)。screen_latest 現 A-first：D=Yahoo 已定案最晚日(resolve_screen_date_a_first，過收盤≥13:30 CST 才取当日防 look-ahead);TWSE 落後不降級 D,僅兩源都無有效收盤才停跑。補過去日期用 compare_v1_v2_dated --date(固定切片、無天花板)。T86 籌碼可回溯、當日可能隔日才出。
 §
 v2 回溯 look-ahead bug：scanner_v2.scan_one_v2(code,name,cm,rows=None) 若 rows=None 會重新抓全歷史 Yahoo → 用到未來價。回溯必須傳入切片好的 rows（backtest_v2.py 用 slice_rows(rows,target_date)）。修好後 v1 與 v2 在 1~9月回溯結果完全相同：546入選/375觸發(69%)/獲利45%/毛利+1542/淨利+604.8。
 §
