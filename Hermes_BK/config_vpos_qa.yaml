@@ -49,6 +49,7 @@ terminal:
   lifetime_seconds: 300
 web:
   backend: ddgs
+  extract_backend: parallel
   use_gateway: false
 browser:
   inactivity_timeout: 120

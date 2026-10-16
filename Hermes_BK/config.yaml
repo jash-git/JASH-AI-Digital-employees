@@ -50,6 +50,7 @@ terminal:
 web:
   backend: ddgs
   use_gateway: false
+  extract_backend: parallel
 browser:
   inactivity_timeout: 120
   command_timeout: 30

@@ -46,6 +46,10 @@ for workflow execution.
   free-tier job, 1080p VRAM ceiling), Discord-compatible ffmpeg stitch.
   Authored by [@purzbeats](https://github.com/purzbeats). Load this whenever
   you're starting from an official template.
+- `qwen-image-comfyui.md` — running Qwen-Image 2.x in ComfyUI (agent-driven):
+  three-file model placement, the GGUF-vs-native loader fork, VRAM tiers, and
+  the `/system_stats` host-feasibility check (`torch_vram_total`, not raw
+  `vram_total`).
 
 **Scripts (`scripts/`):**
 

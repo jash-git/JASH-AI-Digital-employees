@@ -35,6 +35,37 @@ https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
 之後再去抓取2026/09/30的實際資料 進行對應比較 並回報你的工具的準確度有多少
 
 ~~~~~~~~~~~~~~~~~~~
+之後如果我要使用產圖skill 我要如何下命令
+	╭─ ☤ Hermes ───────────────────────────────────────────────────────────────────╮
+	不用記命令——直接用白話告訴我你要什麼圖，我會自動載入 comfyui-qwen-image-gguf skill 並驅動 ComfyUI 幫你產。例如：
+
+	> 「幫我產一隻戴聖誕帽、眨眼的小貓頭鷹」
+	> 「用 /media/.../卡通_胖胖貓頭鷹_頭像.png 當參考，產一個舉「加油」牌子的版本」
+
+	想更快更準，給我這幾項（可選）：
+	- 參考圖路徑——要角色一致就給（你的貓頭鷹就用這個）。
+	- 提示詞——想要什麼動作/表情/場景。
+	- 種子——想重複某張結果就給（不給就隨機）。
+	- 尺寸——預設 512；要更大說一聲。
+
+
+
+	兩種模式：
+	- 參考圖 + 提示詞（推薦）：角色最一致，適合你這隻貓頭鷹的系列。
+	- 純文字提示：只給描述，角色會重創。
+
+
+
+	批量/自動化（進階）：
+	已有可重放 workflow，改 prompt/seed 就能連續產：
+	- JSON：/media/sf_ComfyUI_windows_portable/千問文字產圖AI/qwen_owl_sticker_API_workflow.json
+	- 說明：同目錄 qwen_owl_sticker_README.md
+
+	要自己從 terminal 跑批次，可用 comfyui skill 的 run_workflow.py --host 10.0.2.2:8188 --workflow api_prompt.json（需 API 格式）。
+
+
+
+	一句話總結： 直接跟我說「產…圖」就好，我會自動接上這套 skill。要現在試一張嗎？
 
 ~~~~~~~~~~~~~~~~~~~
 daytrade_scanner工具 [台股當沖]

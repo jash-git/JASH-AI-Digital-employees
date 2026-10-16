@@ -5,3 +5,5 @@ Zuma game at /home/vblinux/zuma.html: initial ball chain now starts at START_DIS
 Profile 策略：8 profile（jl_lead/jl_php/jl_qa/jl_ui/vpos_core/vpos_lead/vpos_qa/vpos_ui）各自獨立記憶與技能，互不共享；default=/home/vblinux/.hermes。分享按需——特定profile需要時才手動同步特定檔案。同步：`cp -r <skill> /home/vblinux/.hermes/profiles/<p>/skills/` 逐檔拷貝到各 profile skills 目錄（global skills不自動同步）。備份：sudo /home/vblinux/Hermes_BK/backup.sh（自動sudo）。
 §
 User prefers plain, everyday explanations over technical jargon — when they say 「看不懂」, switch to concrete worked examples (e.g. walk through 台積電 at 150元 showing entry/stop/target math) instead of stacking parameters or formulas.
+§
+用戶以繁體中文溝通，回覆一律使用繁體中文。
