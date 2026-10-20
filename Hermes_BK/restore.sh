@@ -25,6 +25,19 @@ for arg in "$@"; do
     esac
 done
 
+# Options: whether to restore each profile's state.db (SQLite memory store).
+# Mirrors backup.sh exactly: default = NO (skip), so a plain `restore.sh` restores
+# non-DB data only. Pass --state to also restore state.db (+ -shm / -wal sidecars)
+# from $BACKUP_ROOT/state/<profile>/. Env var RESTORE_STATE_DB can force it.
+STATE_DB=0
+for arg in "$@"; do
+    case "$arg" in
+        --no-state) STATE_DB=0 ;;
+        --state)    STATE_DB=1 ;;
+    esac
+done
+STATE_DB="${RESTORE_STATE_DB:-$STATE_DB}"
+
 # --- Gateway helpers ---------------------------------------------------------
 gateway_stop() {
     echo "⏹ Stopping $GATEWAY_SERVICE..."
@@ -186,6 +199,26 @@ for profile in $ALL_PROFILES; do
     restore_file "$BACKUP_ROOT/人格檔/${profile}_SOUL.md" "$PROF_SRC/SOUL.md" || true
     restore_file "$BACKUP_ROOT/config_${profile}.yaml" "$PROF_SRC/config.yaml" || true
     restore_dir "$BACKUP_ROOT/cron/$profile" "$PROF_SRC/cron" || true
+
+    # Restore profile SQLite state.db (live persistent memory store) + WAL sidecars.
+    # Mirrors backup.sh --state: copy db + -shm + -wal together for a consistent hot
+    # snapshot of the WAL database. Only when opted in AND present in the backup.
+    if [ "$STATE_DB" = "1" ]; then
+        if [ -d "$BACKUP_ROOT/state/$profile" ]; then
+            mkdir -p "$PROF_DIR"
+            copy="$(read_backup "$BACKUP_ROOT/state/$profile")" \
+                || { echo "  ❌ Failed to read: $BACKUP_ROOT/state/$profile"; }
+            if [ -n "${copy:-}" ] && cp -a "$copy/." "$PROF_DIR/" 2>/dev/null; then
+                chown -R "$(id -u):$(id -g)" "$PROF_DIR" 2>/dev/null || true
+                echo "  ✓ $profile state.db restored"
+            else
+                echo "  ❌ Failed to write: $PROF_DIR/state.db*"
+            fi
+            [ -n "${copy:-}" ] && rm -rf "$(dirname "$copy")" 2>/dev/null || true
+        else
+            echo "  ⚠ No state/ backup for $profile (skipping DB restore)"
+        fi
+    fi
 done
 
 # --- daytrade_scanner project + tool symlink ---------------------------------

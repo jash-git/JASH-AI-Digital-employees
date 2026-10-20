@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-19",
+  "min_score": 45,
+  "top": 20,
+  "chumma_data_date": "2026-10-19",
+  "v1": [
+    {
+      "code": "2357",
+      "name": "華碩",
+      "close": 970.0,
+      "score": 50,
+      "direction": "做多",
+      "entry": 1005.0,
+      "sl": 990.5,
+      "tp1": 1026.8,
+      "tp2": 1041.4,
+      "rr1": 1.5,
+      "setup": "拉回找買點(策略B)"
+    }
+  ],
+  "v2": [
+    {
+      "code": "2357",
+      "name": "華碩",
+      "close": 970.0,
+      "score": 60,
+      "chumma_boost": 10,
+      "direction": "做多",
+      "entry": 1005.0,
+      "sl": 990.5,
+      "tp1": 1026.8,
+      "tp2": 1041.4,
+      "rr1": 1.5,
+      "chumma_note": "看多（投信買超7.8萬股）",
+      "foreign_net": -103.3532,
+      "investor_net": 7.7837
+    }
+  ],
+  "summary": {
+    "v1_count": 1,
+    "v2_count": 1,
+    "both": 1,
+    "only_v1": 0,
+    "only_v2": 0
+  }
+}

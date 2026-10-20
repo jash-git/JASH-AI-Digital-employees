@@ -70,6 +70,12 @@ ln -sfn /home/vblinux/<toolname> ~/.hermes/tools/<toolname>
 ```
 
 ### 5. 跑備份 + 驗證
+> ⚠️ **執行備份前，先問使用者：這次要不要連 state.db 一起備？**
+> `backup.sh` 預設**不備 db**（state.db ≈ 590M，含各 profile 活躍記憶庫）。
+> - 不備（一般情況）：`sudo bash /home/vblinux/Hermes_BK/backup.sh`
+> - 要備（重灌前 / 使用者明確要求）：加 `--state` → `sudo bash /home/vblinux/Hermes_BK/backup.sh --state`
+> 預設 = 不備；只有使用者明說才帶 `--state`。
+
 ```bash
 cd /home/vblinux/Hermes_BK && sudo bash backup.sh   # 需 sudo（免密碼）
 diff <(cat /home/vblinux/.hermes/skills/<cat>/<skill>/SKILL.md) \
@@ -83,6 +89,7 @@ ls -la /home/vblinux/Hermes_BK/Code/<toolname>/    # 確認專案已備份
 3. **符號連結不備份**：backup.sh 不碰 `~/.hermes/tools/`，但 restore.sh 會重建連結。還原後連結一定在。
 4. **facts.json 勿手改**：`~/.hermes/tools/facts.json` 是安裝器管理的 manifest（含 artifact digest），手動連結的工具不要寫進去。
 5. **跑前語法檢查**：改 backup.sh/restore.sh 後先 `bash -n script.sh`，確認無誤再執行。
+6. **db 預設不備，跑前須確認**：backup.sh 預設 `STATE_DB=0`（跳過 state.db）。執行備份前先問使用者要不要這次連 db 一起備；要的話加 `--state`。state.db 是各 profile 活躍記憶庫，不備 = 重灌後無法從 Hermes_BK 還原。
 
 ## 把技能同步到所有 profile
 全域技能不自動同步。8 個 profile（jl_lead/jl_php/jl_qa/jl_ui/vpos_core/vpos_lead/vpos_qa/vpos_ui）各自獨立 skills/：

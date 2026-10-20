@@ -80,6 +80,11 @@ daytrade_scanner工具 [台股當沖]
 	目前 daytrade_scanner和對應的skill 你回測了那麼多筆資料 如果不考慮滑點 且嚴格遵守 開倉+停損+TP1先停利一半+另一半拚TP2停利 規則 如此勝率是多少 賺多少
 
 ~~~~~~~~~~~~~~~~~~~
+備份技能
+	連DB一起 執行備份動作
+	執行備份動作
+	
+~~~~~~~~~~~~~~~~~~~
 
 sudo rm -rf /media/sf_VM/Hermes_BK 
 sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份

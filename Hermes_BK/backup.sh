@@ -11,6 +11,20 @@ if [ "$(id -u)" -ne 0 ]; then
     exec sudo "$0" "$@"
 fi
 
+# Options: whether to back up each profile's state.db (SQLite memory store).
+# Default = NO (skip). state.db is large (~590MB across all profiles) and every
+# profile calls this script, so backing it up by default wastes space/time.
+# Pass --state to opt in; --no-state or the default skips the DB backups.
+STATE_DB=0
+for arg in "$@"; do
+    case "$arg" in
+        --no-state) STATE_DB=0 ;;
+        --state)    STATE_DB=1 ;;
+        -h|--help)  echo "Usage: backup.sh [--no-state] [--state]"; exit 0 ;;
+    esac
+done
+STATE_DB="${BACKUP_STATE_DB:-$STATE_DB}"
+
 BACKUP_ROOT="/home/vblinux/Hermes_BK"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 PROFILES_DIR="/home/vblinux/.hermes/profiles"
@@ -18,10 +32,14 @@ GLOBAL_SKILLS="/home/vblinux/.hermes/skills"
 GLOBAL_MEMORIES="/home/vblinux/.hermes/memories"
 PERSONALITY_DIR="/home/vblinux/.hermes"
 
-# Auto-detect all profiles (supports new profiles without script modification)
+# Auto-detect all profiles (supports new profiles without script modification).
+# Only directories count as profiles; a stray config.yaml file in this dir must be ignored.
 ALL_PROFILES=""
 if [ -d "$PROFILES_DIR" ]; then
-    ALL_PROFILES=$(ls -1 "$PROFILES_DIR" | tr '\n' ' ')
+    for d in "$PROFILES_DIR"/*/; do
+        [ -d "$d" ] || continue
+        ALL_PROFILES="$ALL_PROFILES$(basename "$d") "
+    done
 fi
 if [ -z "$ALL_PROFILES" ]; then
     echo "WARNING: No profiles found in $PROFILES_DIR"
@@ -43,9 +61,10 @@ echo "Backup root: $BACKUP_ROOT"
 # Pitfall: If directories already exist with stale data, cp -r will merge/overwrite
 # unpredictably. Always start from a clean slate.
 echo "🧹 Clearing old backup data and recreating directories..."
-rm -rf "$BACKUP_ROOT/skills" "$BACKUP_ROOT/memories" "$BACKUP_ROOT/cron" "$BACKUP_ROOT/人格檔" "$BACKUP_ROOT/global_skills" "$BACKUP_ROOT/global_memories"
+rm -rf "$BACKUP_ROOT/skills" "$BACKUP_ROOT/memories" "$BACKUP_ROOT/cron" "$BACKUP_ROOT/state" "$BACKUP_ROOT/人格檔" "$BACKUP_ROOT/global_skills" "$BACKUP_ROOT/global_memories"
 rm -f "$BACKUP_ROOT/config_*.yaml" "$BACKUP_ROOT/config.yaml"
 mkdir -p "$BACKUP_ROOT/skills" "$BACKUP_ROOT/memories" "$BACKUP_ROOT/cron" "$BACKUP_ROOT/人格檔" "$BACKUP_ROOT/global_skills" "$BACKUP_ROOT/global_memories"
+[ "$STATE_DB" = "1" ] && mkdir -p "$BACKUP_ROOT/state" || true
 echo "✓ Old data cleared. Fresh directories created."
 echo ""
 
@@ -130,6 +149,23 @@ for profile in $ALL_PROFILES; do
         echo "  ✓ $profile cron jobs backed up"
     else
         echo "  ⚠ No $profile cron jobs found"
+    fi
+
+    # Backup profile SQLite state.db (live persistent memory store) + WAL sidecars.
+    # NOTE: state.db is NOT covered by memories/ (.md files); it holds the live DB.
+    # Copy db + -shm + -wal together for a consistent hot snapshot of the WAL database.
+    if [ "$STATE_DB" = "1" ]; then
+        echo "[state] Backing up $profile state.db..."
+        mkdir -p "$BACKUP_ROOT/state/$profile"
+        cp -p "$PROF_DIR/state.db"      "$BACKUP_ROOT/state/$profile/state.db"      2>/dev/null || true
+        cp -p "$PROF_DIR/state.db-shm"  "$BACKUP_ROOT/state/$profile/state.db-shm"  2>/dev/null || true
+        cp -p "$PROF_DIR/state.db-wal"  "$BACKUP_ROOT/state/$profile/state.db-wal"  2>/dev/null || true
+        if [ -f "$PROF_DIR/state.db" ]; then
+            sz=$(stat -c%s "$PROF_DIR/state.db" 2>/dev/null || echo 0)
+            echo "  ✓ $profile state.db backed up ($((sz/1024/1024)) MB)"
+        else
+            echo "  ⚠ No $profile state.db found"
+        fi
     fi
 done
 
