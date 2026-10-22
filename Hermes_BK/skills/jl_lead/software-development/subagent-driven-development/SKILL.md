@@ -200,10 +200,8 @@ git add -A && git commit -m "feat: complete [feature name] implementation"
 - "Add JWT token generation"
 - "Create registration endpoint"
 
-## Dispatch Pitfalls — What NOT to Do
+## Red Flags — Never Do These
 
-- **NEVER use `hermes --profile <name> "task"` to dispatch subagents.** This CLI invocation fails silently (exit code 2) and never runs the target profile's persona. Always use `delegate_task` — it is the only reliable dispatch mechanism.
-- **NEVER let a stalled subagent block the entire workflow.** If a subagent has not updated deliverables after 5+ minutes (no new transcript lines), self-review the current state and re-dispatch, or dispatch a fresh subagent with a clearer prompt. Do not wait indefinitely — set an internal timeout of ~8 minutes max before manual intervention.
 - Start implementation without a plan
 - Skip reviews (spec compliance OR code quality)
 - Proceed with unfixed critical/important issues

@@ -341,17 +341,6 @@ Catch issues early
 
 **Quality is not an accident. It's the result of systematic process.**
 
-## VPOS Closed-Loop Delegation (profile-specific)
-
-For the VPOS project, every delegation MUST follow the 3-step closed-loop:
-1. **Implementer** (vpos_core or vpos_ui) → fixes code
-2. **QA Reviewer** (vpos_qa) → validates, writes report to `review-reports/`
-3. **User Verification** → user runs `dotnet build` and accepts
-
-**This is an iron rule (鐵律). Never skip the QA step.**
-
-See `references/vpos-closed-loop-delegation.md` for full details.
-
 ## Further reading (load when relevant)
 
 When the orchestration involves significant context usage, long review loops, or complex validation checkpoints, load these references for the specific discipline:

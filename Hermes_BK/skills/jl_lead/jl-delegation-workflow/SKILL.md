@@ -16,14 +16,11 @@ description: JL Lead (PHP/MySQL/Layui) 任務委派、Cron 監控與 QA 閉環�
 7. **主動推進**：dispatch 後 5 分鐘內必須主動檢查 `delegate_task(action='list')`，不可只等 Cron。每輪開頭先檢查是否有 pending delegate / 缺 Cron 的任務。
 8. **同時下屬不超過 2 個（鐵則）**：**每次委派當下，除了 jl_lead 之外，活躍的子代理（running status）最多 2 個**。這是防卡死與上下文爆炸的硬上限——超過就表示派太開、監控會失焦。達上限時：(a) 先等現有子代理完成/停止，或 (b) 把多個小任務合併成「一個聚焦 goal」用單一子代理處理。**換專案（新工作目錄）也適用此鐵則**——它跟 jl_lead profile 綁定、存在 `~/.hermes/skills/jl-delegation-workflow`（global），不隨 suanming/ 目錄變動，因此任何專案都自動生效。
 
-### ⚡ 記憶體壓力護欄（OOM 防呆 — 2026-10-01 yifanzi 親身教訓，最高優先級；2026-10-02 根治修訂）
+### ⚡ 記憶體壓力護欄（OOM 防呆 — 2026-10-01 yifanzi 親身教訓，最高優先級）
 
-**背景（親身崩潰教訓）**：本機 **3.8G RAM + swap**。2026-10-01 一次對話中同時開 `delegate_task` subagent + Chrome CDP 瀏覽器 + gateway，把記憶體吃盡。gateway log 先連續 7+ 次「kanban dispatch: system memory pressure is elevated / critical」（OOM 前兆），隨後 kernel **systemd-oomd 發出 SIGKILL（exit -9）**殺掉進程 → CLI 跳出、cron watchdog 靜默停擺。**根因不是程式 bug，是「多工重載進程同時跑」觸發 OOM killer。**errors.log 在 Sep 21 / Sep 24 / Oct 1 多次出現 `exit_code: -9 (SIGKILL)`——這是 kernel OOM killer 的標準指紋。
+**背景（親身崩潰教訓）**：本機只有 **3.8G RAM + 3.8G swap**。2026-10-01 一次對話中同時開 `delegate_task` subagent + Chrome CDP 瀏覽器 + gateway，把記憶體吃盡。gateway log 先連續 7 次「kanban dispatch: system memory pressure is elevated; limiting to at most 1 new worker」（OOM 前兆），隨後 gateway 被 SIGKILL → CLI 跳出、cron watchdog 靜默停擺。**根因不是程式 bug，是「多工重載進程同時跑」觸發 OOM。**
 
-**架構事實（2026-10-02 根治後已更正，切勿再信舊敘述）**：
-- jl_lead **沒有專屬 gateway unit**；共用共享 `hermes-gateway.service`（systemd user service），它透過 `multiplex_profiles: true` **同時服務全部 9 個 profile（含 jl_lead）**。該 unit 已設定 **`Restart=always`、`Linger=yes`、`enabled`**，所以 OOM/systemd 殺掉後會**自動重啟**（不再需要手動拉起）。
-- ⚠️ **但 systemd-oomd 殺進程時是連 cgroup 一起殺**：gateway 的 cron children 與它同 cgroup，OOM 當下 watchdog 仍會短暫停擺（直到 systemd 在 RestartSec=5s 後重啟 gateway）。所以「派單後等 cron 回報」在本機仍不可靠——**護欄仍是必要防呆**，只是死亡窗口從「永久」縮小到「~5 秒」。
-- **swap 已擴充**：`/swap.img` 由 3.8G → **8G**（2026-10-02，fstab 已有 `/swap.img none swap sw 0 0`，重啟自動生效）。這直接抬高 OOM killer 殺進程的門檻。
+**關鍵脆弱點（為何這規則重要）**：jl_lead 的 gateway **不是 systemd 管理的**（`systemctl --user list-units` 看不到 `hermes-gateway-jl_lead.service`；只有共享的 `hermes-gateway.service`）。它一旦被 OOM/systemd 殺掉，cron watchdog 會**完全靜默停擺**——委派監控無紅燈、無通知。所以「派單後等 cron 回報」在本機不可靠，必須主動檢查記憶體。
 
 **強制規則（每次 `delegate_task` 送出前必做）**：
 
@@ -32,19 +29,19 @@ description: JL Lead (PHP/MySQL/Layui) 任務委派、Cron 監控與 QA 閉環�
    awk '/^MemAvailable/{printf "MemAvailable: %.0f MB\n", $2/1024} /^SwapTotal/{t=$2} /^SwapFree/{f=$2} END{printf "SwapUsed: %.0f MB\n", (t-f)/1024}' /proc/meminfo
    ```
    > ⚠️ **不要用 `grep SwapUsed`**——/proc/meminfo 沒有這個欄位，實際是 `SwapTotal` 與 `SwapFree`，需相減（Total-Free）。用 `free -m` 也可：`free -m | awk '/^Mem/{print $7} /^Swap/{print $3}'`。
-   - ✅ **安全**：MemAvailable ≥ 1200MB 且 swap used < 4000MB → 可正常派單（一次最多 1 個 subagent）。
-   - ⚠️ **限流**：MemAvailable < 1200MB 或 swap used > 4000MB → **只派 1 個最聚焦 subagent，且本輪不並行 browser_exec/CDP**。
-   - 🛑 **停手**：MemAvailable < 700MB 或 swap used > 6500MB（8G swap 的 ~80%）→ **禁止任何 delegate_task**，改用 `execute_code`（Python regex）做機械式工作、或直接親自完成。
+   - ✅ **安全**：MemAvailable ≥ 1200MB 且 swap used < 2000MB → 可正常派單（一次最多 1 個 subagent）。
+   - ⚠️ **限流**：MemAvailable < 1200MB 或 swap used > 2000MB → **只派 1 個最聚焦 subagent，且本輪不並行 browser_exec/CDP**。
+   - 🛑 **停手**：MemAvailable < 700MB 或 swap used > 2800MB → **禁止任何 delegate_task**，改用 `execute_code`（Python regex）做機械式工作、或直接親自完成。
 
 2. **subagent 與瀏覽器互斥（硬上限）**：**同一時間窗內，`delegate_task` subagent 數量 ≤ 1，且不得同時跑 `browser_exec`/CDP 實測**。兩者都重（各自吃百~數百 MB）。正確順序：先派 subagent → 等完成 → 再開瀏覽器實測。絕不並行。
 
-3. **盯緊 OOM 前兆訊號**：每次 terminal 看 log、或回應裡看到「memory pressure is elevated / critical」字樣 = 記憶體已吃緊，**立即停止新增 subagent**，讓現有進程跑完釋放。連續出現 = 即將 OOM。
+3. **盯緊 OOM 前兆訊號**：每次 terminal 看 log、或回應裡看到「memory pressure is elevated」字樣 = 記憶體已吃緊，**立即停止新增 subagent**，讓現有進程跑完釋放。連續出現 = 即將 OOM。
 
-4. **每輪開頭強制 gate（session-start health check）**：**每次新 session 或每輪開頭先做兩件事**：(a) `systemctl --user status hermes-gateway.service` → Active 必須是 `active (running)`、NRestarts 低；若 dead/failed，立即 `systemctl --user restart hermes-gateway.service`。(b) awk 從 meminfo 算 MemAvailable + swap used。gateway 不活或記憶體已緊 → 本輪只做輕量工作（讀檔、grep、execute_code），不派重委派。**這取代舊版「pgrep standalone gateway」檢查**——jl_lead 的 gateway 已是 systemd 管理，用 systemctl 查最權威。
+4. **主動檢查取代被動等 cron**：由於 gateway 非 systemd 管理、OOM 後 watchdog 會靜默停擺，**每輪開頭先 `free -h` + awk 從 SwapTotal-SwapFree 算 swap used**；若記憶體已緊，本輪只做輕量工作（讀檔、grep、execute_code），不派重委派。
 
 5. **微步優先於多工**：本機資源有限時，「串行單步 + 親自做」永遠比「並行多 subagent」穩。能自己 `execute_code`/`terminal` 解決的機械式工作（複製檔案、md5 核對、grep 計數），不要為了「流程完整」而開 subagent。
 
-**判斷口訣**：「派單前先問 free -h；subagent 與瀏覽器不並行；OOM 前兆出現就停手；每輪開頭看 gateway active。」資源不夠時，串行親自做 > 併行開代理。
+**判断口訣**：「派單前先問 free -h；subagent 與瀏覽器不並行；OOM 前兆出現就停手。」資源不夠時，串行親自做 > 併行開代理。
 
 ## 微步切割標準（Cron-Ready Rule）
 
@@ -84,34 +81,33 @@ description: JL Lead (PHP/MySQL/Layui) 任務委派、Cron 監控與 QA 閉環�
 1. **環境檢查**：確認 `docs/`、`review-reports/`、`src/api/`、`src/config/`、`src/public/` 存在；`task_board.json`、`issue-log.md`、`.env` 已初始化（見 SOUL.md Step 0）。
 2. **Graphify 優先**：分析跨檔案依賴時，先 `graphify query "<功能>"` 釐清呼叫鏈。**grep 僅用於最終驗證**。若 graphify 無結果，改用 `graphify query "<符號> 引用"`。
 
-### Step 0.1: Gateway Bootstrap（每次新 session 開頭強制步驟, TASK-030 教訓；2026-10-02 根治修訂）
+### Step 0.1: Gateway Bootstrap（每次新 session 開頭強制步驟, TASK-030 教訓）
 
 cron watchdog 只有在 gateway 執行時才會觸發。**每次新 session 開頭**都應先確認 gateway 在跑，否則 watchdog 形同虛設（gateway 若於兩次 session 之間死亡，派單後才發現就太晚了）：
 
 ```bash
-systemctl --user status hermes-gateway.service --no-pager | grep -E "Active:|NRestarts"
-# Active 必須是 active (running)；NRestarts 應低（偶發 0~2 正常，連續暴增 = crash loop）
+for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"   # 應抓到真實 PID + command line
 ```
 
-- **✅ jl_lead 的 gateway 由 systemd user service 管理**：共用共享 `hermes-gateway.service`（systemd user unit），它透過 `multiplex_profiles: true` **同時服務全部 9 個 profile（含 jl_lead）**。該 unit 已設定 **`Restart=always`、`Linger=yes`、`enabled`**，所以 OOM/systemd 殺掉後會**自動重啟**（RestartSec=5s），不需要手動拉起。**這是與 vpos_lead 相同的架構**（vpos_lead 有自己的 `hermes-gateway-vpos_lead.service`）。
-- **正確檢查**：用 `systemctl --user status hermes-gateway.service`。Active = running = 在跑；dead/failed = 已死，立即 `systemctl --user restart hermes-gateway.service`。**這是權威來源**。
-- ⚠️ **不可只信 cronjob create/list 回傳的 `gateway_running` 欄位**——它可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false/可疑時，用上面的 systemctl 交叉確認。
-- **⚠️ OOM 後 watchdog 仍會短暫停擺**：systemd-oomd 殺進程時連 cgroup 一起殺，gateway 的 cron children 與它同 cgroup，OOM 當下 watchdog 仍會停擺 ~5 秒（直到 systemd 重啟 gateway）。所以「派單後等 cron 回報」在本機仍不可靠——**護欄仍是必要防呆**，只是死亡窗口從「永久」縮小到「~5 秒」。
+- **⚠️ jl_lead 的 gateway 是 standalone process（非 systemd 管理）**：與 vpos_lead 不同，jl_lead **沒有** `hermes-gateway-jl_lead.service` 這個 systemd unit（`systemctl --user list-units | grep hermes` 只有共享的 `hermes-gateway.service`）。它是以 standalone process 直接啟動（command line **不含** profile 名稱，只有 `python3 ... gateway run`，PID 通常固定為 1694）。因此**不能用 `systemctl --user is-active hermes-gateway-jl_lead.service` 檢查**——該 unit 不存在，每次都會回傳 not-found、誤觸發 `hermes gateway install && start`（可能濫 spawn gateway）。
+- **正確檢查**：用 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"`。抓到 PID = 在跑；抓不到 = gateway 已死，手動重啟：`hermes gateway start --profile jl_lead`（或依環境實際啟動方式）。
+- **不可只信 cronjob create/list 回傳的 `gateway_running` 欄位**——它可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false/可疑時，用上面的 pgrep 交叉確認。
+- **⚠️ OOM 後 watchdog 會靜默停擺**：gateway 一旦被 OOM/systemd 殺掉（非 systemd 管理 = 沒有 Restart=always 自動拉起），cron watchdog 完全無紅燈、無通知。所以「派單後等 cron 回報」在本機不可靠，必須主動檢查記憶體 + pgrep（見 ⚡ 記憶體壓力護欄）。
 - **⚠️ 資源提醒**：每個 gateway ~126MB RAM；jl_lead / vpos_lead / default 三個可並存。保持 jl_lead gateway 常駐是委派流程的合理需求（watchdog 依賴它），除非使用者要求省資源，否則維持常駐。
 - **與 Step 3 的關係**：Step 0.1 是「session 開頭主動偵測」（從源頭避免 watchdog 不觸發）；Step 3 的 `gateway_running` 交叉確認是「派單當下二次驗證」。兩層都做，缺一不可。
 
-### Step 0.1.1: Gateway 常駐韌性驗證（2026-10-02 根治修訂——與 vpos_lead 同為 systemd user service 架構）
+### Step 0.1.1: Gateway 常駐韌性驗證（2026-10-01 修正——jl_lead gateway 是 standalone process，非 systemd 管理）
+**與 vpos_lead 的關鍵差異**：vpos_lead 的 gateway 由 systemd 管理（`hermes-gateway-vpos_lead.service` + linger + enabled + Restart=always），所以它的四項韌性檢查（is-active/Linger/enabled/pgrep）對 jl_lead **不适用**。jl_lead 沒有該 systemd unit，因此：
+- ❌ **Linger=yes / enabled / Restart=always 這三項查不到**——因為根本沒有對應的 service unit。不要嘗試 `systemctl --user is-enabled hermes-gateway-jl_lead.service`（回傳 not-found）。
+- ✅ **唯一可靠的存活檢查是 pgrep**：
 
-**jl_lead 的 gateway 由 systemd user service 管理**（共享 `hermes-gateway.service`，非 systemd system unit），設定 `Restart=always`、`Linger=yes`、`enabled`。因此：
-
-- ✅ **存活檢查用 systemctl**：
 ```bash
-systemctl --user status hermes-gateway.service --no-pager | grep -E "Active:|NRestarts"
+for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"   # 抓到 PID = 在跑；抓不到 = gateway 已死
 ```
-  Active = running + NRestarts 低 = gateway 真正常駐。dead/failed → `systemctl --user restart hermes-gateway.service`。
-- ✅ **Linger=yes / enabled / Restart=always 都查得到**（用 `systemctl --user is-enabled hermes-gateway.service`、`systemctl --user show hermes-gateway.service -p Linger,Restart`）。整台重啟或登出登入都不影響；唯一會讓它停的是手動 `systemctl --user stop` 或整台關機。
-- **⚠️ OOM 後約 5 秒自動拉起**：因為有 Restart=always，gateway 被 OOM/systemd 殺掉後會自己回來（RestartSec=5s）。但 systemd-oomd 連 cgroup 一起殺，OOM 當下 watchdog 仍短暫停擺。這是本機委派監控最脆弱的環節——**靠擴充 swap + 記憶體護欄從源頭降低 OOM 機率**。
-- **對策**：每次新 session 開頭先 `systemctl --user status hermes-gateway.service`；dead/failed 就重啟，再繼續委派。**這比「派單後被 cron 回報 false 才發現」更早、更可靠**。
+
+- **⚠️ OOM 後不會自動拉起**：因為非 systemd 管理，沒有 Restart=always。gateway 一旦被 OOM/systemd 殺掉（或整台重啟），它**不會自己回來**——watchdog 靜默停擺、無通知。這是本機委派監控最脆弱的環節。
+- **對策**：每次新 session 開頭先 `pgrep`；抓不到就手動重啟 gateway，再繼續委派。**這比「派單後被 cron 回報 false 才發現」更早、更可靠**。
+- **實際 process / PID**：用 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"` 抓到真實 PID（jl_lead gateway 的 comm=hermes，bash wrapper 的 comm=bash，故過濾掉 bash）。注意：command line **不含** `--profile jl_lead`，不能靠 profile 名稱匹配。
 
 **四項全過 = gateway 真正常駐**：對話結束、你登出登入都不影響；唯一會讓它停的是手動 `systemctl --user stop`、整台關機/重啟（enabled 會幫它在下次開機自動回來）、或 linger 被關閉且帳號完全登出很長時間。
 
@@ -133,7 +129,6 @@ gateway process **本身不做任何 LLM 推理**，只是一個「守門哨兵�
 讀取 `docs/task_board.json` 與 `review-reports/issue-log.md`：
 - **已完成且 DONE** → 直接告知使用者已實作，嚴禁盲目重複。
 - **未完成（TODO/IN_PROGRESS/REVIEW/REJECTED）** → 接續既有工單，不重建。
-- **派單前必查 disk artifact（防重工補強 — yifanzi 親身教訓）**：當 task_board 顯示某「建立/新增」任務為 TODO/REVIEW/IN_PROGRESS，但子代理回報「檔案早已存在、無需修改」時——**派單前先 `ls` / `read_file` 確認目標檔案是否已在 disk**。board 狀態與 disk artifact 可能因 session 中途中斷（崩潰/跳離）而脫鉤：先前 session 可能已寫入檔案卻未更新 board，或標了 REVIEW 但崩潰在標 DONE 之前。此時 board 的「未完成」是假訊號，盲目重派建立工作會產生無效委派（子代理白跑一趟、回報「無需修改」）。**實質驗證以 disk artifact 為準，而非 board 字串**——尤其 session 開頭剛經歷過崩潰時，先 `ls src/public/` / `src/api/` 盤點實際存在的檔案，再決定是接續還是新建。
 - **全新需求** → 寫入 `docs/api-spec.json` → 建立工單（status=TODO）→ 派單。
 - **「還有哪些未完成」類問題**：不得只信 task_board 或單一 checklist——至少交叉比對 task_board / gap-analysis.md（勾選框常過時）/ issue-log.md（REJECTED 可能已被親自重做標 DONE）。細節見 `references/task-board-lifecycle.md` Step 1b。
 
@@ -156,7 +151,7 @@ cronjob(action='create', schedule='every 3m', repeat=<依規模>, prompt='檢查
 ```
 
 #### ⚠️ 強制前置條件與豁免禁令（2026-09-19 新增，因 T-37/T-38 漏建 watchdog + gateway 未跑而補強）
-1. **Gateway 必須在跑**：cron job 只有在 gateway 執行時才會觸發。派單前先確認 gateway 在跑——**用 `systemctl --user status hermes-gateway.service --no-pager | grep -E "Active:|NRestarts"`（Active 必須是 active (running)）**，這是 systemd user service 的權威檢查。**🔥 Gateway 狀態交叉確認（2026-10-02 修訂）**: cronjob create/list 回傳的 `gateway_running` 欄位是「cron 會不會觸發」的權威來源，但**不可只信一個欄位就下結論**。當它回報 false（或你看到 gateway status 不是 running）時，必須再直接跑一次 `systemctl --user status hermes-gateway.service` 交叉確認——工具欄位可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false/非 running = 立即 `systemctl --user restart hermes-gateway.service`（該 unit 有 Restart=always，重啟後 watchdog 約 5 秒內恢復）。**重派 qa 複查時也要為新委派建立 watchdog**（TASK-030 漏洞③：重派 re-verification qa 隻手動 tail transcript、漏建 watchdog）。
+1. **Gateway 必須在跑**：cron job 只有在 gateway 執行時才會觸發。派單前先確認 gateway 在跑——**用 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"`（抓 PID）**，不是 `systemctl --user status hermes-gateway-jl_lead.service`（該 unit 對 jl_lead 不存在）。cron job 已建立但 gateway 沒跑 = 不會觸發 = 形同虛設。**🔥 Gateway 狀態交叉確認（2026-09-21 借鏡 vpos TASK-030）**: cronjob create/list 回傳的 `gateway_running` 欄位是「cron 會不會觸發」的權威來源，但**不可只信一個欄位就下結論**。當它回報 false（或你無法用 pgrep 抓到 PID）時，必須再直接跑一次 `for pid in $(pgrep -f "gateway run"); do c=$(cat /proc/$pid/comm 2>/dev/null); [ "$c" != "bash" ] && echo "PID $pid alive (comm=$c)"` 交叉確認——工具欄位可能因服務尚未完全就緒、已退出、或與 cron 子系統檢查的 service unit 不同步而誤報。回報 false = 先手動重啟 gateway（standalone process，非 systemd），再重新建立 watchdog。**重派 qa 複查時也要為新委派建立 watchdog**（TASK-030 漏洞③：重派 re-verification qa 隻手動 tail transcript、漏建 watchdog）。
 2. **零豁免**：任何委派（含「只改一個檔案、機械式批量替換」的任務）都必須在送出 delegate_task 當下立即建立 watchdog，不得以「任務太小/太快完成」為由跳過。漏建 watchdog 視為流程違規。
 3. **回應必報**：每次委派後的回覆中，必須明確列出 watchdog job_id 與 schedule；沒有就代表沒建。
 4. **清理過期**：舊任務（如 T-35）的 watchdog repeat 到點後會自動結束，若清單堆積已到期、無對應進行中任務的 watchdog，應主動 `cronjob action='remove'` 刪除，避免垃圾累積。

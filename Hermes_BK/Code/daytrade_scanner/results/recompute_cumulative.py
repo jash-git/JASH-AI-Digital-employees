@@ -36,7 +36,7 @@ frozen = agg(csv_to_rows(f"{BASE}/backtest_tp1half_20260101~20261013.csv"))
 print("凍結基底(cap=10-13):", {k: round(v,2) if isinstance(v,float) else v for k,v in frozen.items()})
 
 # 2. 各實盤執行日 JSON
-daily = ["20261014","20261015","20261016","20261019","20261020","20261021"]
+daily = ["20261014","20261015","20261016","20261019","20261020","20261021","20261022"]
 day_agg = {}
 for d in daily:
     path = f"{BASE}/verify_{d}_tp1half.json"

@@ -151,30 +151,6 @@ Tell them what you created in plain prose:
 
 **Tenant inheritance.** If `HERMES_TENANT` is set in your env, pass `tenant=os.environ.get("HERMES_TENANT")` on every `kanban_create` call so child tasks stay in the same namespace.
 
-### Monitoring cron intervals
-
-**Critical path tasks (active development):** Use `every 3m` for cron watchdogs. A 30-minute interval is useless when you're waiting on subagents — by the time you check, the subagent may have been dead for hours.
-
-**Non-critical / batch tasks:** `30m` or `1h` is fine for things like "check if all tasks done" after everything is already in REVIEW/DONE.
-
-**Rule of thumb:** If you dispatched N subagents and are actively waiting for them, the cron should check every 3 minutes. If all are already DONE and you just need the final "ready to deploy" signal, 30m is fine.
-
-### Subagent QA can be silent
-
-**Pitfall:** A subagent dispatched as reviewer (e.g., `jl_qa`) can complete its run but produce zero output — no review report in `review-reports/`, no status update in `task_board.json`. The orchestrator must **verify** that review artifacts actually exist, not just assume the subagent's completion means review happened.
-
-**Mitigation:** After dispatching a reviewer subagent, check `review-reports/` for new files. If none appear within the expected window (2-3 checks of the cron), do a **manual review yourself** and update the task board. Do not wait indefinitely for silent subagents.
-
-**Pattern:**
-1. Dispatch reviewer subagent.
-2. Cron checks `review-reports/` for new files every 3m.
-3. If no new files after 3 checks (~9 minutes), orchestrator reads the deliverable files directly and does manual review.
-4. Update task board with PASS/REJECTED + findings.
-
-### Orchestration fallback — don't let subagents block the whole pipeline
-
-If a subagent finishes but its output is incomplete or wrong (e.g., review report missing, task board not updated), the orchestrator should **intervene directly** rather than spawning a replacement. Read the deliverable files, assess quality, and update the task board manually. The goal is pipeline progress, not perfect delegation.
-
 ## Recovering stuck workers
 
 When a worker profile keeps crashing, hallucinating, or getting blocked by its own mistakes (usually: wrong model, missing skill, broken credential), the kanban dashboard flags the task with a ⚠ badge and opens a **Recovery** section in the drawer. Three primary actions:

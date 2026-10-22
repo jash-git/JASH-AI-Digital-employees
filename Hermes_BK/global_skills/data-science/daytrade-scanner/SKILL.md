@@ -73,10 +73,22 @@ v1/v2 指標需多日歷史，TWSE 只給當天。screen_latest.py / compare_v1_
 3. **統計要「統計在一起」**：新資料要併進既有的「延伸至今日」（section 五）那張表，**不要**另開一個平行小節重複同樣的總數（會把同一套數字拆成兩份）。headline 數字同步更新到 section 一、費用解讀放 section 六。
 4. **回溯 vs 今日實盤是「互不重疊」直接加總**：`backtest_tp1half_tp2.py` 的 next-bar cap = TWSE 已定案日，抓不到尚未 settled 的「今日」棒；昨日推薦 → 今日實際成交正是回溯尚未涵蓋的那一段（D=選股日 → 下一根實際棒）。用同一套 `evaluate()` 判定後加總即「完整至今統計」。加總前**先確認無重疊**：檢查新 CSV 的 screen_date 是否已含該日（若已含＝已被回溯收掉，勿重複加）；TWSE 釋出該日後，重跑回溯會自然把當日收進窗口。
 5. **更新累積數字時，區分「現況 headline」與「歷史敘述」**：只有承載「至今累積」的 headline table（section 一）、表格總計行、淨利勾稽行要換成新數；描述「某執行日區塊當時效果」的過去式條目（例：「…把累積毛從 +2,579.62 拉到 +2,569.27、勝勝率 55.8%」**保留當時數字**不要改——它記錄該區塊當下的累積端點）。全篇「N實盤執行／實盤區塊」計數要一致同步（新增一日 → N→N+1），但此同步只動承載累積的 headline，不动歷史敘述行內的舊總數。換完用 `grep -c` 查舊數字剩餘處數是否符合預期（現況數字應為 0、純歷史敘述可留 1）。
+### 批量更新彙總報告的編輯手法（每日驗證後必做）
+
+主報告 `報告_TP1半倉拚TP2_2026.md` 一次要換十幾個位置（section 一表格、section 五總計行、淨利勾稽行、當日條目）。不要逐處呼叫 `patch`——多筆對**同一檔**的 patch/str.replace **並發會競寫**，且單筆無效替換會**靜默成功**（pattern 沒匹配也不報錯），以為換了其實舊數字還在。用「整檔讀入 → 依行號逐行 ASCII 正則替換 → 一次寫回」：
+
+1. `lines = open(path, encoding='utf-8').readlines()`（保留每行 `\n`），之後一律以 **1-indexed 行位置**定位。⚠ **插入新表格行/條後所有行號會整體位移**——插入要麼由下往上做、要麼做完重新 `grep -n` 按內容確認，別信舊行號（用舊 sed 行號會抓到移位前的無關行）。
+2. 每行用 `re.sub` 只動 **ASCII token**（數字、`%`、日期），pattern 的**空白要與檔案內完全一致**（漏掉 `2.15` 與 `=` 之間的空格就無匹配而靜默失敗）；整段 CJK 照既有「ASCII 錨點 + 通配」原則跳過，勿手打。
+3. 每處替換都 `assert new != line`（自訂 helper）——這是無效匹配的最后一道防線，沒斷言就把舊數字當新數留下。
+4. 全部改完最後 `f.writelines(lines)` **一次寫回**（原子、不中途競寫）。
+5. 換完依第 5 點區分「現況 headline」與「歷史敘述」，再 `grep -c` 核舊現況數字應為 0。
+
+**驗證工具資料也要跟**：新增 `verify_<YYYYMMDD>_tp1half.json` 後，若要用 `results/recompute_cumulative.py` 重算累積總數，要把該日期加進它的 `daily = [...]` 清單。漏掉時腳本照常跑完、數字看起來對，但「重現」的是少含最新一日的過期累積（假正確）；新增執行日後先 `grep -n <YYYYMMDD>` 確認日期已在清單內。**主報告累積數字是手動換的、不依賴此清單**——這步只保驗證工具不失真。
 
 ## 常用命令
 **- 當日最新對等選股（screen_latest）：`python3 screen_latest.py [--top 15] [--min-score 45]` → results/screen_v{1,2}_<D>.csv。**已對齊 compare_v1_v2_dated 的切片基底**（純 Yahoo、按日期字串 <=D 公平切片）。自動決定 D = **A（Yahoo）已定案的最晚交易日**（A-first，過收盤≥13:30 CST 才取当日；盘中回退至最近定案日），TWSE 落後不降級 D。實測與 `compare_v1_v2_dated.py --date <D>` 結果完全相同（V1+V2 全部一致），两者可互用。
 - **官方/一致性選股報告**：用 `python3 compare_v1_v2_dated.py --date <最新已定案日>` → results/compare_dated_<YYYYMMDD>.json，再依 results/選股報告_YYYY-MM-DD_v1_vs_v2.md 模板寫。**所有「選股報告_...」都用此法**（Yahoo 日期字串切片 ≤D、公平切片、無 look-ahead），保證日與日可比。
+- **回應「跑 [某日] 選股 + v1/v2 差多少 + 寫完整報告」**（常見每日指令）：這是**選股報告 class**（當日 v1/v2 入選對比），不是實盤驗證。① 先定 D = 該日的已定案交易日（「昨天」= 昨日；若今日未收盤或 TWSE 落後，`screen_latest.py` 會自動退到最近定案日）。② `python3 compare_v1_v2_dated.py --date <D>` → results/compare_dated_<D>.json（對等 JSON，與 screen_latest 完全一致）。③ 依**最接近的既有 `選股報告_<prev>_v1_vs_v2.md`** 當格式錨點，寫入 `results/選股報告_<D>_v1_vs_v2.md`。⚠ **別跟 `驗證_<YYYY-MMDD>_選股執行結果.md` 搞混**：後者是「D-1 推薦、D 實際成交」的 TP1半倉拚TP2 逐檔驗證（用 `backtest_tp1half_tp2.py::evaluate()`），與本 class 是兩份不同 dated 檔案；兩者日期都落在 D 附近，寫前讀一下確認目標檔案，才不會重疊或漏寫。
 - 指定日期回溯 v1：`python3 scan_on_date.py --date 2026-10-12`
 - 指定日期回溯 v2：`python3 scan_on_date_v2.py --date 2026-10-12`
 - 掃 Yahoo 缺口：`python3 check_feed_gaps.py`

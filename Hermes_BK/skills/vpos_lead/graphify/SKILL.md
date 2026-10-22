@@ -663,16 +663,6 @@ if [ ! -f graphify-out/.graphify_python ]; then
 fi
 ```
 
-## Pitfalls & Troubleshooting
-
-Common issues encountered during graphify runs — see `references/pitfalls.md` for full details.
-
-- **Corpus size warning** (>500 files or >2M words): graphify will ask to narrow. Pass a specific subdirectory path instead of `.`.
-- **AST extraction timeout** on 300+ files: use `timeout=600` in terminal calls. On retry, cache prevents re-processing.
-- **Shrink guard** (`to_json` refuses overwrite): happens when new graph has fewer nodes than existing `graph.json`. Delete old `graph.json` first if the reduction is intentional.
-- **Code-only corpus**: must write an empty `.graphify_semantic.json` before Part C merge to avoid `FileNotFoundError`.
-- **Zero-node files**: `.json`, `.sql`, `.axaml`, `.js` files may produce zero AST nodes — informational, no action needed.
-
 ## For --update and --cluster-only
 
 Both are non-default subcommands. `--update` re-extracts only new or changed files; `--cluster-only` reruns clustering on the existing graph. See `references/update.md` for both flows.

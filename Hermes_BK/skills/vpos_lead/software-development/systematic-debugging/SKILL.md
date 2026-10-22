@@ -187,31 +187,6 @@ search_files("variable_name\\s*=", path="src/", file_glob="*.py")
 
 ---
 
-## Same-Class Bug Sweep — Fix at the Chokepoint
-
-When one symptom turns out to share a root cause with *other* call sites (a single source of truth, or a shared code path that produces the bad value for every caller), **fix at the chokepoint once** rather than surgically patching each caller.
-
-**Why:** A chokepoint fix is DRY and protects all current *and future* callers. N surgical patches duplicate logic, drift over time, and leave the next landmine unfixed. Prefer one root-cause fix over N per-caller fixes for the same class of bug.
-
-**Method:**
-1. Trace data flow (Phase 1 step 5) to find the shared method/function that yields the bad value for every caller — this is the chokepoint.
-2. Add the guard/fix *there* so it covers all callers at once.
-3. Then sweep **all** callers of that chokepoint with a live/latent/safe classification (below).
-
-**Live / Latent / Safe audit classification** — use when sweeping for same-class bugs across a codebase:
-
-| Class | Definition | Action |
-|-------|-----------|--------|
-| 🔴 **Live** | Actively crashing / wrong output right now | Fix at chokepoint immediately (highest priority) |
-| 🟡 **Latent** | Shares the root cause but no caller triggers it yet | Protect at chokepoint + document as a maintenance landmine ("will crash if X changes") |
-| 🟢 **Safe** | Callers pass valid values; root cause never reached | Monitor only — do not over-engineer |
-
-This classification keeps the report honest: it separates *quality problems* (live bugs) from *scale problems* (latent landmines), and prevents both under-fixing (missing a latent bug) and over-fixing (rewriting safe code).
-
-**Worked example (VPOS `DBWriter` empty Data Source):** The symptom "Data Source cannot be empty" fired at `DBWriter.Execute()`'s useDefault branch. Root cause: `ConnectionStringLoad()` returns an empty string for any DB name not in its switch whitelist and not a full path. Fixing only the one crashing call site left every other caller of that same chokepoint exposed. The fix was placed inside `OpenConn(Database, blnAppSet)` — the single connection-string source — so it now guards all four direct callers (`DBWriter`, `CreateSQLiteTable`, `GetDataTable`, `GetDataTableParams`) at once. A sweep then classified each caller as live / latent / safe (see `review-reports/review-TASK-028-M12-empty-datasource-audit.md`).
-
----
-
 ## Phase 2: Pattern Analysis
 
 **Find the pattern before fixing:**
