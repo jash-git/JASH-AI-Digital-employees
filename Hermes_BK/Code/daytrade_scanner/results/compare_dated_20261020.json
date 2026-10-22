@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-20",
+  "min_score": 45,
+  "top": 20,
+  "chumma_data_date": "2026-10-20",
+  "v1": [
+    {
+      "code": "2377",
+      "name": "微星",
+      "close": 164.5,
+      "score": 75,
+      "direction": "做多",
+      "entry": 165.0,
+      "sl": 162.5,
+      "tp1": 168.7,
+      "tp2": 171.2,
+      "rr1": 1.5,
+      "setup": "拉回找買點(策略B)"
+    },
+    {
+      "code": "2356",
+      "name": "英業達",
+      "close": 60.0,
+      "score": 60,
+      "direction": "做多",
+      "entry": 60.2,
+      "sl": 59.3,
+      "tp1": 61.5,
+      "tp2": 62.4,
+      "rr1": 1.5,
+      "setup": "拉回找買點(策略B)"
+    }
+  ],
+  "v2": [
+    {
+      "code": "2377",
+      "name": "微星",
+      "close": 164.5,
+      "score": 90,
+      "chumma_boost": 15,
+      "direction": "做多",
+      "entry": 165.0,
+      "sl": 162.5,
+      "tp1": 168.7,
+      "tp2": 171.2,
+      "rr1": 1.5,
+      "chumma_note": "看多（外資淨超539.1萬股）",
+      "foreign_net": 539.0726,
+      "investor_net": -18.8224
+    },
+    {
+      "code": "2356",
+      "name": "英業達",
+      "close": 60.0,
+      "score": 75,
+      "chumma_boost": 15,
+      "direction": "做多",
+      "entry": 60.2,
+      "sl": 59.3,
+      "tp1": 61.5,
+      "tp2": 62.4,
+      "rr1": 1.5,
+      "chumma_note": "看多（外資淨超806.8萬股）",
+      "foreign_net": 806.7972,
+      "investor_net": -121.3011
+    }
+  ],
+  "summary": {
+    "v1_count": 2,
+    "v2_count": 2,
+    "both": 2,
+    "only_v1": 0,
+    "only_v2": 0
+  }
+}

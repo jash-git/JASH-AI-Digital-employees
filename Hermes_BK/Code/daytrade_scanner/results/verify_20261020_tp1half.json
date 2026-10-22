@@ -1,0 +1,14 @@
+{
+  "date": null,
+  "picks_date": "2026-10-19",
+  "exec_date": "2026-10-20",
+  "rows": [],
+  "summary": {
+    "picked": 1,
+    "triggered": 0,
+    "wins": 0,
+    "losses": 0,
+    "gross": 0.0,
+    "net": 0.0
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-21",
+  "min_score": 45,
+  "top": 20,
+  "chumma_data_date": "2026-10-21",
+  "v1": [
+    {
+      "code": "2317",
+      "name": "鴻海",
+      "close": 250.0,
+      "score": 60,
+      "direction": "做多",
+      "entry": 250.8,
+      "sl": 247.2,
+      "tp1": 256.1,
+      "tp2": 259.7,
+      "rr1": 1.5,
+      "setup": "拉回找買點(策略B)"
+    },
+    {
+      "code": "2324",
+      "name": "仁寶",
+      "close": 37.7,
+      "score": 60,
+      "direction": "做多",
+      "entry": 37.8,
+      "sl": 37.2,
+      "tp1": 38.7,
+      "tp2": 39.2,
+      "rr1": 1.5,
+      "setup": "拉回找買點(策略B)"
+    }
+  ],
+  "v2": [
+    {
+      "code": "2317",
+      "name": "鴻海",
+      "close": 250.0,
+      "score": 85,
+      "chumma_boost": 25,
+      "direction": "做多",
+      "entry": 250.8,
+      "sl": 247.2,
+      "tp1": 256.1,
+      "tp2": 259.7,
+      "rr1": 1.5,
+      "chumma_note": "看多（外資淨超3017.2萬股）",
+      "foreign_net": 3017.228,
+      "investor_net": 39.7857
+    },
+    {
+      "code": "2324",
+      "name": "仁寶",
+      "close": 37.7,
+      "score": 75,
+      "chumma_boost": 15,
+      "direction": "做多",
+      "entry": 37.8,
+      "sl": 37.2,
+      "tp1": 38.7,
+      "tp2": 39.2,
+      "rr1": 1.5,
+      "chumma_note": "看多（外資淨超1514.2萬股）",
+      "foreign_net": 1514.1742,
+      "investor_net": -98.7995
+    }
+  ],
+  "summary": {
+    "v1_count": 2,
+    "v2_count": 2,
+    "both": 2,
+    "only_v1": 0,
+    "only_v2": 0
+  }
+}

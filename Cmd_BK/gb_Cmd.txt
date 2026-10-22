@@ -34,6 +34,13 @@ https://pigav.com/w/ng6C3xYzPPesk2L2eGPjcN
 你現在用該工具 抓2026/09/29的收盤資料 進而推估2026/09/30可交易的標的表格
 之後再去抓取2026/09/30的實際資料 進行對應比較 並回報你的工具的準確度有多少
 
+我有免安裝Windows的comfyui 他的URL: http://10.0.2.2:8188/object_info
+他的目錄我掛載到: /media/sf_ComfyUI_windows_portable
+
+01.你徹底了解他的架構版本資訊後寫份報告 放在/media/sf_ComfyUI_windows_portable下 方便日後查閱
+02.我要你增加一個可以給你一張圖 並透過comfyui轉成對應3D模型請評估可行性報告也放在/media/sf_ComfyUI_windows_portable下 方便日後查閱
+03.如果給你一張圖 並透過comfyui轉成對應3D模型可行 才開始配置系統
+
 ~~~~~~~~~~~~~~~~~~~
 之後如果我要使用產圖skill 我要如何下命令
 	╭─ ☤ Hermes ───────────────────────────────────────────────────────────────────╮
@@ -85,6 +92,17 @@ daytrade_scanner工具 [台股當沖]
 	執行備份動作
 	
 ~~~~~~~~~~~~~~~~~~~
+view-comfyui-glb [圖片轉3D檔(glb)]
+	- 要可列印：「幫我把這張照片轉成可列印的 STL」「這個模型能不能印」→ 我載入 3d-print-mesh-repair（Hunyuan3D 出網格 → pymeshfix 修封閉 → STL）。
+	- 要檢視/預覽：「看看 GLB 渲染得不得」「轉成 3d glb 給我看不印」→ 我載入 view-comfyui-glb（MoGe/Hunyuan3D → GLB + 驗證 + 預覽頁）。
+	- 兩者可混著說，我會分辦。
+	測試網址[glb]: https://app.luw.ai/tools/zh-tw/glb ; https://gltf-viewer.donmccurdy.com/
+	測試網址[stl]: https://metool.online/zh/3d/stlViewer/ ; https://any3d.cc/zh-TW/tools/stl-viewer
+	
+~~~~~~~~~~~~~~~~~~~
+
+E:\ComfyUI_windows_portable\install_sf3d_local6.bat > E:\ComfyUI_windows_portable\build_log.txt 2>&1
+
 
 sudo rm -rf /media/sf_VM/Hermes_BK 
 sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份

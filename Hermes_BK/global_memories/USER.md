@@ -7,3 +7,5 @@ Profile 策略：8 profile（jl_lead/jl_php/jl_qa/jl_ui/vpos_core/vpos_lead/vpos
 User prefers plain, everyday explanations over technical jargon — when they say 「看不懂」, switch to concrete worked examples (e.g. walk through 台積電 at 150元 showing entry/stop/target math) instead of stacking parameters or formulas.
 §
 用戶以繁體中文溝通，回覆一律使用繁體中文。
+§
+用戶未來把 3D 製作（單圖→Hunyuan3D 網格→pymeshfix 修封閉→可印 STL）全權委託我操作；他不熟技能呼叫機制，期望我自動載入相關技能、他只需講清楚結果（如「轉成可印的 STL」），由我分辦走檢視(view-comfyui-glb)或列印(3d-print-mesh-repair)流程。
