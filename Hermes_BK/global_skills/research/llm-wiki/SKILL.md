@@ -393,6 +393,35 @@ When ingesting multiple sources at once, batch the updates:
 5. Update index.md once at the end
 6. Write a single log entry covering the batch
 
+### Bulk Corpus Generation
+
+When a source is a large structured corpus (thousands of rows) where hand-curating each entity is
+infeasible, generate entity pages programmatically with a re-runnable script instead of one page at
+a time:
+
+1. **Inspect the schema first** — load a few rows and print every field. For any hierarchical string
+   (category, path, breadcrumb), verify its *actual* separator characters before coding
+   (`re.split(r"[＞/]", value)` rather than an assumption). Splitting on the assumed character
+   silently yields one page per leaf instead of grouping by top-level domain — a flood of
+   near-duplicate orphan pages. See `references/taiwan-law-moj-dataset.md`.
+2. **Pick the grain** — one page per entity (law, paper, product) is the natural unit; keep a
+   consistent shape: frontmatter + metadata table + body + at least 2 outbound wikilinks.
+3. **Group for navigation** — build landing pages at the top-level group (domain/branch), not every
+   leaf, so each entity links to its group and the overview. This satisfies the 2-link rule
+   meaningfully instead of with arbitrary siblings.
+4. **Topic navigation pages** — when a corpus has a core statute + many companion rules structure
+   (acts + regulations, codes + implementing orders), build a few curated landing pages per
+   high-frequency domain: a hand-written scope note + linked core act(s) + every companion rule
+   grouped by sub-agency/category. Future queries land here directly instead of rescanning hundreds
+   of leaf commands. See `references/topic-navigation-pages.md`.
+4. **Rebuild idempotently** — a generator that rewrites directories must clear *every* directory it
+   regenerates at start. Clearing only one leaves stale files from an earlier run as orphan pages.
+5. **Verify the graph** — after generation, scan all `[[wikilinks]]` (resolve by filename across the
+   whole vault, not just each file's own dir) and confirm zero broken links, complete frontmatter,
+   and at least 2 outbound links per entity page before reporting done.
+
+Reusable generator scripts belong under a `scripts/` path so re-ingests stay deterministic.
+
 ### Archiving
 
 When content is fully superseded or the domain scope changes:

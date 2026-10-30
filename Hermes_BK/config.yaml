@@ -346,6 +346,9 @@ custom_providers:
       qwen/qwen3.6-35b-a3b: {}
       text-embedding-nomic-embed-text-v1.5: {}
       frognano-4b-2609: {}
+      gpt-oss-120b: {}
+      mtp: {}
+      iq3_s: {}
     models_discovered: true
 known_plugin_toolsets:
   cli:
