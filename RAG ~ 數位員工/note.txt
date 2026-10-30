@@ -40,3 +40,8 @@ https://www.perplexity.ai/search/5fcfe89e-ad8f-4f0f-98c1-538c091fc7b7
 https://grok.com/share/bGVnYWN5LWNvcHk_59ac006b-a507-4b54-9f9a-372d7b6656dc
 https://claude.ai/share/37e98ed5-59ec-4a54-95ca-e8d631d85401
 https://www.kimi.ai/share/1a1245df-f8f2-8924-8000-000014f49093
+
+================
+
+graphrag 和 llm-wiki 比較 [那如果我要製作一個法律諮詢的顧問 建議哪一個比較適合]
+https://share.google/aimode/uKqx9bkV4LMAV3shz
