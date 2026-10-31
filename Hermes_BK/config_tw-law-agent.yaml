@@ -1,0 +1,13 @@
+model:
+  default: ornith-1.5-35b-a3b
+  provider: custom
+  base_url: http://192.168.56.1:1234/v1
+  api_key: sk-lm-yok1OVMS:vGBKUZAzkRTl8swWIBoA
+_config_version: 50
+telemetry:
+  shared_metrics:
+    enabled: false
+    send: false
+    offer_version: 2
+approvals:
+  destructive_slash_confirm: false
