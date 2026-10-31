@@ -162,6 +162,32 @@ view-comfyui-glb [圖片轉3D檔(glb)]
 			補充：wiki 內《社會秩序維護法》沒有針對人行道騎自行車的相關條文，故本案處罰依據以《道路交通管理處罰條例》為主。
 		
 ~~~~~~~~~~~~~~~~~~~
+/home/vblinux/llm-wiki-home/opencv 幫我在這裡建立opencv的llm-wiki
+	 https://docs.opencv.org/ 瀏覽該網站 依序把每個版本的資料全部有條不紊的建立出來
+		請以英文和中文為第一 二優先 而非日文
+	
+	https://github.com/jash-git/Learning-OpenCV-3
+	https://huggingface.co/gokul9/opencvbooks/tree/main/open%20cv%20books
+	https://opencv.org/pdf/Curriculum-Fundamentals-of-Computer-Vision-Image-Processing-OpenCV.pdf
+	https://hlevkin.com/hlevkin/45MachineDeepLearning/DL/Learning-OpenCV-Second-Edition.pdf
+	https://yun.weicheng.men/Book/OpenCV%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89%E7%BC%96%E7%A8%8B%E6%94%BB%E7%95%A5.%E7%AC%AC3%E7%89%88.pdf
+	https://opencv.org/university/wp-content/uploads/sites/4/2024/08/C0-Curriculum.pdf?srsltid=AYCX9vLXeUIx9yMmqI3ZiGIFsncRWsDtUyXyFW4F97IbQlK24X2aF2Lj
+	https://github.com/98bar/Book-PDF-PHEI/blob/main/Book-PDF/%E3%80%8AOpenCV%E8%BD%BB%E6%9D%BE%E5%85%A5%E9%97%A8%EF%BC%9A%E9%9D%A2%E5%90%91Python%E3%80%8B.pdf
+	https://scispace.com/pdf/a-brief-introduction-to-opencv-2ipkar0ugh.pdf
+	https://opencv-python.readthedocs.io/_/downloads/en/latest/pdf/
+	https://www.comp.nus.edu.sg/~cs4243/doc/opencv.pdf
+	把這些連結資料 全部下載回來並 更新到 OpenCV wiki
+
+
+	以後我要如何要你執行更新該 這個wiki 資料
+		「幫我重新生成/更新 OpenCV wiki」
+		
+	所以以後如果要優先以這wiki資料為優先處理或回答我的需求要如何下命令
+		「用 OpenCV wiki 回答我：OOXX.....」
+			用 OpenCV wiki 回答我：ORB 和 SIFT 差異？
+		
+		
+~~~~~~~~~~~~~~~~~~~
 E:\ComfyUI_windows_portable\install_sf3d_local6.bat > E:\ComfyUI_windows_portable\build_log.txt 2>&1
 
 
@@ -180,3 +206,6 @@ sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/
 
 source .venv/bin/activate
 hermes --yolo # --yolo 省去授權
+
+source .venv/bin/activate
+hermes -p tw-law-agent chat --yolo # --yolo 省去授權
