@@ -209,3 +209,7 @@ hermes --yolo # --yolo 省去授權
 
 source .venv/bin/activate
 hermes -p tw-law-agent chat --yolo # --yolo 省去授權
+
+hermes -p tw-law-agent -z "請幫我寫一隻入門的C++範例" #單一次呼叫顯示在SHELL內
+hermes -p tw-law-agent -z "請幫我寫一隻入門的C++範例" >> /home/vblinux/tw-law-agent_OUT.txt
+hermes -p tw-law-agent -z "用台灣法律wiki查 我在人行道騎型電動自行車 觸犯哪些規定 可能會受打那些處罰" >> /home/vblinux/tw-law-agent_OUT.txt
