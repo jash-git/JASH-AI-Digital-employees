@@ -1,4 +1,4 @@
-Playwright single-arrow-function-arg wrapping quirk: when calling page.evaluate("(arg) => {...}", {"arg": value}) with a SINGLE arrow function argument, Playwright wraps the arg as an object — inside the callback `arg` becomes `{arg: value}`, so `arg.y` is undefined. Fix: either destructure in JS `(arg) => { const {y} = arg; ...}` or pass a plain numeric/string literal embedded via Python `%f`/string formatting (no arg passing). Verified while QA-testing /home/vblinux/zuma.html.
+Playwright page.evaluate() quirk: a SINGLE arrow-fn arg is wrapped as {arg:value} inside JS; destructure or pass a literal (no arg passing). [zuma QA]
 §
 User machine hardware: Ryzen AI Max+ 395 / AMD Strix Halo APU (40-CU RDNA 3.5, up to 128GB unified memory), 128GB RAM. CRITICAL CORRECTION: ComfyUI /system_stats MISreports the GPU as 'AMD Radeon 8060S' with torch_vram ~= 2MB -- that report is WRONG and must not drive feasibility calls; the real chip is capable (Qwen-Image-2.1 feasible via unified mem). Agent's own runtime is a small VMware VM (~3.8GB, virtual SVGA) and cannot directly probe this GPU; it only reaches ComfyUI over network at http://10.0.2.2:8188.
 §
@@ -7,3 +7,5 @@ User's ComfyUI = Windows portable install mounted WRITABLE at /media/sf_ComfyUI_
 For GGUF workflows install custom node city96/ComfyUI-GGUF (NOT LighTOS-AI/ComfyUI-GGUF which 404s); it registers UnetLoaderGGUF. Requires pip pkg 'gguf' (pure-Python py3-none-any) -- installed into the embedded site-packages at /media/sf_ComfyUI_windows_portable/python_embeded/lib/site-packages/. numpy already present. The delvewheel numpy import error seen when testing from the agent VM is a FALSE signal (agent lacks delvewheel), not a real problem on the Windows embedded python.
 §
 User's provided ComfyUI workflow JSONs are EDITOR format (nodes use 'type' + widgets_values), NOT API format ('class_type'). Skill's run_workflow.py and /api/prompt require API format -> convert first (or have user Export-API from the web UI).
+§
+VM guest CPU exposes only SSE4.2 (NO AVX/AVX2/FMA) → paddlepaddle/paddleocr wheels SIGILL on import; PaddleOCR unusable here. Use tesseract for OCR instead. python3.12 venv at /tmp/pdocv has pdf2image/reportlab/paddleocr installed but paddle is broken (CPU mismatch).

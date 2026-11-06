@@ -52,16 +52,38 @@ opencv/
 Grain = **per-version module overview** (scope + key API groups + representative functions +
 usage + version notes). NOT per-function (that would be ~2500 pages of noise).
 
-### External sources (raw/papers/ + resources/)
-Books / official curricula / docs are ingested separately from the generator:
+### External sources (raw/papers/ + raw/repos/ + raw/articles/ + resources/)
+Books / official curricula / docs / code repos / web tutorials are ingested separately from the
+generator. Full procedure + size-caveat decisions: `references/ingesting-repos.md`.
 - Raw PDFs → `raw/papers/<name>.pdf` (immutable) with a companion `raw/papers/<name>.md` frontmatter
   (`source_url`, `ingested`, `sha256` over the whole file). Do NOT reproduce full book text.
+- Code repos → download the GitHub **archive zip** (`raw/repos/<owner>-<repo>.zip`) — never the raw
+  blob URL (fails on large files, returns HTML); see recipe below. Companion note at
+  `raw/repos/<owner>-<repo>.md` (`source_url`, `ingested`, sha256 of the zip).
+- Single web page / tutorial index → `raw/articles/<name>.html`.
 - One overview page per source in `resources/` — frontmatter `type: summary`, `tags: [resource, …]`,
-  `sources: [raw/papers/<name>.md]`. Include an ACCURATE TOC (extract it; don't guess), a topic map
-  cross-linked to `[[module-ver]]` pages, and version/accuracy caveats. List every resource page in
-  the "Resources" section of index.md. See SCHEMA.md → "Resource Pages".
+  `sources: [raw/papers/<name>.md | raw/repos/<name>.zip | raw/articles/<name>.html]`. Include an
+  ACCURATE TOC (derive from the archive tree / extracted HTML; don't guess), a topic map cross-linked
+  to `[[module-ver]]` pages, and version/accuracy caveats. List every resource page in the "Resources"
+  section of index.md. See SCHEMA.md → "Resource Pages".
+- **Keep pages lean.** Describe each source's structure + cross-link; do NOT inline-reproduce code or
+  book text. Repo zips are often dominated by binaries/media/installers — say what the real content is
+  and its rough fraction, and let that drive the description (see references/ingesting-repos.md).
+- Image-only PDFs (book previews, scanned slides) have no text layer: `pdftotext`/`pdfinfo` return
+  nothing. Describe via bibliographic metadata (title/author/publisher/ISBN) and mark the page
+  image-based; OCR only if the user asks.
 - Record sources that could NOT be retrieved (401/403/404/gated) in resources/index.md so they can
   be retried later with a fix (correct blob→raw filename, HF credentials, alternate host).
+
+### Pruning stored reference material
+`raw/repos/` + `raw/papers/` are local copies of external sources; resource pages describe them but
+never inline-reproduce, so bloated zips are reclaimable. Before deleting anything: quantify each zip's
+inside composition by extension bucket (binaries/installers/video/model-weights/fonts = bloat; code/docs/
+images = real), then tier DELETE / TRIM / KEEP. **Never over-trim** — cut only re-downloadable bloat and
+keep all code, docs, and the test images/examples load, or you break reproducibility for a few MB.
+Always write `raw/repos/removed-sources.md` (with GitHub archive-zip re-download links) first, then update
+index.md + per-repo pages + `sources:` frontmatter together so no page points at a deleted file. Full
+procedure + decision table: `references/pruning-repos.md`.
 
 ## How to regenerate / extend
 - Run via a FRESH interpreter: `python3 scripts/build_modules.py` from the wiki dir. See gotcha #3.
@@ -101,6 +123,12 @@ by basename.
    `.../extra_modules/api_root.html` (base path is `/5.0/`, not `/5.x/`). 4.x=`/4.12.0/`, 3.x=`/3.4.20/`.
 7. **5.x confidence = medium** (brand-new release; cv2 paths for split/rename modules may still be
    stabilizing). Stable lines (4.x, 3.x) = high. Set via the `CONFIDENCE` map.
+8. **GitHub API rate limits bite bulk repo work.** Unauthenticated core = 60 req/hr; search API ~15/min.
+   To enumerate a user's topic repos use the *search* endpoint (`/search/repositories?q=user:<name>+<term>`,
+   `total_count` gives the real count regardless of pagination). Once core is exhausted, keep fetching repo
+   **content** via `raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>` — that is static CDN, NOT the
+   API, so it is unlimited and does not touch the rate limit. Reserve the few remaining core calls for
+   discovery (file trees via `/repos/o/r/contents/`). Branch is usually `main` or `master`; try both.
 
 ## Current state (as of 2026-10-30)
 3 versions: 4.x (74 entities), 3.x (62), 5.x (76) = 212 entity pages + 3 landing pages, plus

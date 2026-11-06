@@ -267,6 +267,20 @@ When the user provides a source (URL, file, paste), integrate it into the wiki:
      On re-ingest of the same URL: recompute the sha256, compare to the stored value —
      skip if identical, flag drift and update if different. This is cheap enough to
      do on every re-ingest and catches silent source changes.
+   - **Preserve the actual source file — never substitute a link or transcription.** Save
+     the real binary (PDF, image, data dump) into `raw/` even when its text is not
+     extractable here (scanned PDF, screenshot, OCR-blocked). A recorded URL or a "needs
+     OCR" note is NOT a backup: if the source site vanishes, only the local file survives.
+     Whether the current environment can read it now is irrelevant to whether you should
+     preserve it — this is a standing user requirement (sources may disappear at any time).
+     See `references/backup-completeness-audit.md`.
+   - **Assess the PDF text layer before choosing an extraction strategy.** Not every PDF has a
+     usable text layer — large files can be JBIG2/scan documents whose "text" is compressed
+     binary. Probe first (recipe in `references/pdf-text-layer-assessment.md`): if the layer is
+     clean, extract and transcribe; if it is scanned/OCR-blocked, preserve the binary + add a
+     "needs OCR" note and do **not** attempt a markdown transcription — you would only be copying
+     PDF object definitions (`endstream`/`endobj`) and mojibake. This gate prevents wasting
+     chapter-splitting effort on a book with no extractable content.
 
 ② **Discuss takeaways** with the user — what's interesting, what matters for
    the domain. (Skip this in automated/cron contexts — proceed directly.)
@@ -392,6 +406,12 @@ When ingesting multiple sources at once, batch the updates:
 4. Create/update pages in one pass (avoids redundant updates)
 5. Update index.md once at the end
 6. Write a single log entry covering the batch
+
+**Tool gotchas when scripting bulk ingest (`execute_code`):**
+- `os.listdir()` on a directory returns its *subdirectory names*, not files — scanning it directly yields empty results or `IsADirectoryError`. Use `os.walk()` + `os.path.isfile()` to enumerate raw files.
+- `write_file` refuses to overwrite a file whose full current content wasn't read in this session. Call `read_file` (whole file) before rewriting `index.md`, `log.md`, or existing pages from a script, or the write is rejected.
+
+See `references/bulk-ingest.md` for turning one landing page into a cluster of related sources and recovering PDF links hidden inside HTML tables.
 
 ### Bulk Corpus Generation
 

@@ -104,7 +104,14 @@ view-comfyui-glb [圖片轉3D檔(glb)]
 	- 兩者可混著說，我會分辦。
 	測試網址[glb]: https://app.luw.ai/tools/zh-tw/glb ; https://gltf-viewer.donmccurdy.com/
 	測試網址[stl]: https://metool.online/zh/3d/stlViewer/ ; https://any3d.cc/zh-TW/tools/stl-viewer
-	
+
+~~~~~~~~~~~~~~~~~~~	
+ ocr-quality [WINDOWS 掃描OCR技能 (E:\ComfyUI_windows_portable\python_embeded_ocr)]
+	下次要新掃描時，給我這三點就夠：
+	- 哪一本 PDF（路徑或檔名）/ 單一圖片檔名
+	- 掃哪些頁（整本／第 X–Y 頁／指定頁）
+	- 結果存哪裡（預設存在 python_embeded_ocr 資料夾）
+ 
 ~~~~~~~~~~~~~~~~~~~
 /home/vblinux/llm-wiki-home/tw-law 這是我想要存放台灣法律的wiki
 	建立的資料來源:
@@ -186,7 +193,30 @@ view-comfyui-glb [圖片轉3D檔(glb)]
 		「用 OpenCV wiki 回答我：OOXX.....」
 			用 OpenCV wiki 回答我：ORB 和 SIFT 差異？
 		
-		
+~~~~~~~~~~~~~~~~~~~		
+/home/vblinux/llm-wiki-home/EE-lib 幫我在這裡建立電機工程相關 的 llm-wiki
+	https://ocw.nthu.edu.tw/upload/124/news/[%E9%9B%BB%E5%8B%95%E6%A9%9F%E6%A2%B0L1a%E8%A3%9C%E5%85%85%E6%95%99%E6%9D%90]%E4%BA%94%E5%8D%97%E5%9C%96%E6%9B%B8_%E9%9B%BB%E8%B7%AF%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5%E8%88%87%E5%88%86%E6%9E%90.PDF
+	https://cc.ee.ntu.edu.tw/~thc/course_ckt.html
+	http://job.wnvs.cyc.edu.tw/z361/attachments/article/50/%E5%9F%BA%E6%9C%AC%E9%9B%BB%E5%AD%B8I.pdf
+	http://job.wnvs.cyc.edu.tw/z361/attachments/category/14/%E9%9B%BB%E5%AD%90%E5%AD%B8I.pdf
+	http://job.wnvs.cyc.edu.tw/z361/attachments/article/50/%E5%9F%BA%E6%9C%AC%E9%9B%BB%E5%AD%B8I.pdf
+	http://job.wnvs.cyc.edu.tw/z361/attachments/category/14/%E6%95%B8%E4%BD%8D%E9%82%8F%E8%BC%AFII.pdf
+	https://math.ntnu.edu.tw/~li/
+	https://drive.google.com/file/d/0B9RAVul6SWKENzI1MGFhNDQtM2Y0ZS00MTEyLWI5NzItNmEwMjcxNjJiNmMw/view?hl=zh_TW&resourcekey=0-xGZAS1xPQyLJm-Tq98CdEw
+	https://www.klcivs.kl.edu.tw/ischool/public/resource_view/show.php?view=1&aid=389&raid=389
+	https://www.mlaivs.mlc.edu.tw/ischool/publish_page/138/?cid=3659
+	https://csd.nutn.edu.tw/Robot//car/arduino.pdf
+	https://www.playrobot.com/robotpress/wp-content/uploads/2015/11/Arduino_Happy-Learning_DEMO.pdf
+	http://cc.ee.ntu.edu.tw/~rbwu/rapid_content/course/IoT_Intro/Ch1_Arduino.pdf
+	https://csd.nutn.edu.tw/Robot//car/arduino.pdf
+	https://www.me.tku.edu.tw/me/wp-content/uploads/2024/10/Arduino%E5%AF%A6%E9%A9%97%E6%89%8B%E5%86%8A.pdf
+	https://docs.arduino.cc/tutorials/
+	https://blog.jmaker.com.tw/arduino-tutorials/
+	閱讀上述連結 把有用的資料全部下載回來並 更新到 EE-lib wiki
+	
+	另外 我是透過你來存取該wiki 但wiki內有簡中/繁中/英文等資料 如果我輸入繁中 但資料是英文 你能找到對應資訊並輸出對應的繁中說明給我嗎
+		可以
+
 ~~~~~~~~~~~~~~~~~~~
 E:\ComfyUI_windows_portable\install_sf3d_local6.bat > E:\ComfyUI_windows_portable\build_log.txt 2>&1
 

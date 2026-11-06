@@ -48,3 +48,17 @@ A directory of interlinked markdown:
 - Raw sources under `raw/` are immutable; never edit them. Corrections belong in wiki pages.
 - The vault is refreshed from MOJ via the lianghsun/tw-law dataset. See `log.md` for update history and `scripts/generate_corpus.py` to rebuild.
 - To refresh with new laws: re-download from MOJ/HuggingFace, verify sha256 in `raw/laws/_SOURCE.md`, then run the generators (see `llm-wiki` skill).
+- **Concrete live-pull procedure** (`scripts/fetch_moj_live.py`, added 2026-11-02): MOJ open API
+  endpoints `https://law.moj.gov.tw/api/ch/law/json` and `/ch/order/json` return a **ZIP** (not raw
+  JSON) containing `ChLaw.json` / `ChOrder.json` = `{"UpdateDate":..., "Laws":[{LawLevel,LawName,
+  LawURL,LawCategory,LawModifiedDate,...,LawForeword,LawArticles:[{ArticleType,ArticleNo,ArticleContent}]}]}`.
+  The script converts MOJ fields → corpus schema (name/text/category/level/doc_type/update_date) using
+  the same logic as `lianghsun/tw-law-sync`, then writes `ch_law_full_text.jsonl` / `ch_order_full_text.jsonl`
+  to a target dir. Re-run generators (`generate_corpus.py` + `generate_concepts.py` +
+  `generate_order_concepts.py`) to rebuild all pages.
+- **Gotchas:** (1) MOJ endpoints return ZIP — unzip, take the single `.json`. (2) On this VM Python's
+  `urllib` fails with `SSL: CERTIFICATE_VERIFY_FAILED … Missing Subject Key Identifier` against MOJ's cert;
+  use **curl** for downloads (the script already shells out to curl). (3) HF dataset `lianghsun/tw-law`
+  updates weekly but lags MOJ by weeks/months — re-downloading it often yields byte-identical files; pull
+  live from MOJ when you need genuinely current law. (4) Always diff new vs current raw before replacing, and
+  back up old `raw/laws/*.jsonl` to `raw/laws/_backup_<date>/`.
