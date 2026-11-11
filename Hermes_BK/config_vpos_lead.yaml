@@ -253,6 +253,7 @@ plugins:
     - homeassistant
     - rtk-rewrite
     - spotify
+    - yuanbao
   disabled: []
 security:
   redact_secrets: true
@@ -280,7 +281,7 @@ onboarding:
     busy_input_prompt: true
 computer_use:
   backend: cua
-_config_version: 50
+_config_version: 53
 session_reset:
   mode: none
   idle_minutes: 1440
@@ -351,8 +352,74 @@ known_plugin_toolsets:
     - spotify
   acp:
     - homeassistant
+    - yuanbao
   webhook:
     - homeassistant
+    - yuanbao
+  telegram:
+    - yuanbao
+  discord:
+    - yuanbao
+  whatsapp:
+    - yuanbao
+  slack:
+    - yuanbao
+  signal:
+    - yuanbao
+  homeassistant:
+    - yuanbao
+  qqbot:
+    - yuanbao
+  a2a:
+    - yuanbao
+  api_server:
+    - yuanbao
+  bluebubbles:
+    - yuanbao
+  buzz:
+    - yuanbao
+  cron:
+    - yuanbao
+  dingtalk:
+    - yuanbao
+  email:
+    - yuanbao
+  feishu:
+    - yuanbao
+  google_chat:
+    - yuanbao
+  irc:
+    - yuanbao
+  line:
+    - yuanbao
+  matrix:
+    - yuanbao
+  mattermost:
+    - yuanbao
+  msgraph_webhook:
+    - yuanbao
+  ntfy:
+    - yuanbao
+  photon:
+    - yuanbao
+  raft:
+    - yuanbao
+  relay:
+    - yuanbao
+  simplex:
+    - yuanbao
+  sms:
+    - yuanbao
+  teams:
+    - yuanbao
+  wecom:
+    - yuanbao
+  wecom_callback:
+    - yuanbao
+  weixin:
+    - yuanbao
+  whatsapp_cloud:
+    - yuanbao
 known_builtin_toolsets:
   cli:
     - browser
@@ -409,6 +476,8 @@ telemetry:
     send: true
 _left_core_scoped:
   - homeassistant
+  - yuanbao
 _left_core_installed:
   - homeassistant
   - spotify
+  - yuanbao

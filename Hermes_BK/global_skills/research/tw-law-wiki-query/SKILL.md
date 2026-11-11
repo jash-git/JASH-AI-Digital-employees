@@ -56,7 +56,10 @@ A directory of interlinked markdown:
   the same logic as `lianghsun/tw-law-sync`, then writes `ch_law_full_text.jsonl` / `ch_order_full_text.jsonl`
   to a target dir. Re-run generators (`generate_corpus.py` + `generate_concepts.py` +
   `generate_order_concepts.py`) to rebuild all pages.
-- **Gotchas:** (1) MOJ endpoints return ZIP — unzip, take the single `.json`. (2) On this VM Python's
+- **Gotchas:** (0) `generate_corpus.py` REWRITES `raw/laws/_SOURCE.md` from its own generic template,
+  wiping manually-added MOJ live API + curl + sha256 detail. After every rebuild, restore the rich
+  `_SOURCE.md` (keep source/curl/sha256/本次異動/備份 bullets) via patch — don't let it degrade.
+  (1) MOJ endpoints return ZIP — unzip, take the single `.json`. (2) On this VM Python's
   `urllib` fails with `SSL: CERTIFICATE_VERIFY_FAILED … Missing Subject Key Identifier` against MOJ's cert;
   use **curl** for downloads (the script already shells out to curl). (3) HF dataset `lianghsun/tw-law`
   updates weekly but lags MOJ by weeks/months — re-downloading it often yields byte-identical files; pull
