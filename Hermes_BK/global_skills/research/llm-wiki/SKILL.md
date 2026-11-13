@@ -259,7 +259,7 @@ a `_meta/topic-map.md` that groups pages by theme for faster navigation.
 When the user provides a source (URL, file, paste), integrate it into the wiki:
 
 ① **Capture the raw source:**
-   - URL → use `web_extract` to get markdown, save to `raw/articles/`
+   - URL → use `web_extract` to get markdown, save to `raw/articles/`. **Full documentation site** (hundreds–thousands of pages): per-URL extraction is too slow and loses structure — build a small crawler instead. Recipe + framework quirks in `references/docs-site-crawl.md`.
    - PDF → use `web_extract` (handles PDFs), save to `raw/papers/`
    - Pasted text → save to appropriate `raw/` subdirectory
    - Name the file descriptively: `raw/articles/karpathy-llm-wiki-2026.md`
@@ -344,7 +344,7 @@ wiki = "<WIKI_PATH>"
 # Pages with zero inbound links are orphans
 ```
 
-② **Broken wikilinks:** Find `[[links]]` that point to pages that don't exist.
+② **Broken wikilinks:** Find `[[links]]` that point to pages that don't exist. Run `scripts/verify_links.py` for a deterministic audit (broken links + any page under the outbound minimum).
 
 ③ **Index completeness:** Every wiki page should appear in `index.md`. Compare
    the filesystem against index entries.
@@ -412,6 +412,8 @@ When ingesting multiple sources at once, batch the updates:
 - `write_file` refuses to overwrite a file whose full current content wasn't read in this session. Call `read_file` (whole file) before rewriting `index.md`, `log.md`, or existing pages from a script, or the write is rejected.
 
 See `references/bulk-ingest.md` for turning one landing page into a cluster of related sources and recovering PDF links hidden inside HTML tables.
+
+See `references/api-docs-wiki.md` for building an interlinked wiki from programming-language / framework documentation: the entity (per technology) → concept (cross-referenced reference syntax) → comparison (selection guide) layering, plus the cross-link discipline.
 
 ### Bulk Corpus Generation
 
@@ -526,6 +528,7 @@ vault in Obsidian on your laptop/phone — changes appear within seconds.
 ## Pitfalls
 
 - **Never modify files in `raw/`** — sources are immutable. Corrections go in wiki pages.
+- **Dev-wiki code blocks can trip `verify_links.py`:** its wikilink regex `\[\[([^\]]+)\]\]` also matches JavaScript two-dimensional array syntax (`cols: [[ … ]]`) inside ``` fences, reporting false "broken links". When writing framework/language reference pages that contain JS nested arrays, format them without adjacent brackets (split across lines) so the deterministic audit stays green. The wiki is fine — this is a detector limitation, not a real broken link.
 - **Always orient first** — read SCHEMA + index + recent log before any operation in a new session.
   Skipping this causes duplicates and missed cross-references.
 - **Always update index.md and log.md** — skipping this makes the wiki degrade. These are the

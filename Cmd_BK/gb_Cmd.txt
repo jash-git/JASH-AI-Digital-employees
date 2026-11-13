@@ -217,6 +217,43 @@ view-comfyui-glb [圖片轉3D檔(glb)]
 	另外 我是透過你來存取該wiki 但wiki內有簡中/繁中/英文等資料 如果我輸入繁中 但資料是英文 你能找到對應資訊並輸出對應的繁中說明給我嗎
 		可以
 
+~~~~~~~~~~~~~~~~~~~		
+/home/vblinux/llm-wiki-home/PG-lib 幫我在這裡建立程式開發相關 的 llm-wiki
+	https://www.php.net/manual/en/index.php ~OK
+	https://www.mysqltutorial.org/ ~OK
+	https://api.jquery.com/ ~OK
+	https://layui.dev/docs/2/ ~OK
+	https://learn.microsoft.com/zh-tw/dotnet/csharp/
+	https://www.w3schools.com/cs/index.php ~OK
+	https://docs.avaloniaui.net/docs/welcome ~OK
+	https://docs.python.org/3/ ~OK
+	https://www.w3schools.com/c/index.php
+	https://www.w3schools.com/cpp/default.asp
+	https://www.w3schools.com/mysql/default.asp	
+	https://www.w3schools.com/js/default.asp
+	https://www.w3schools.com/css/default.asp
+	https://www.w3schools.com/bootstrap/bootstrap_ver.asp
+	閱讀上述連結 把所有的資料全部下載回來並 更新到 PG-lib wiki (/home/vblinux/llm-wiki-home/PG-lib)
+	記得在運行過程 subagent不要大於2
+	
+	現在我的PG-lib wiki是收集了我常開發軟體語言的資料 如我下達對他們更新 你能按照之前的網址去將最新資料抓回來並進行更新嗎
+		目前狀態（這樣你才知道「抓最新」具體是指補新內容，不是重做）：
+		- PHP 官方文件全收 11,019 頁（主線已到 8.5）
+		- MySQL（mysqltutorial.org）486 頁、jQuery（api.jquery.com）354 頁、Layui v2 182 頁
+		- Avalonia 3,544 頁（含 /api/**）、Python（docs.python.org/3）522 頁
+		- C#：W3Schools 68 + MS Learn 繁中 381 頁
+		- 精煉頁共 106 頁（entities 9 / concepts 95 / comparisons 2），raw/articles 合計 16,091 頁
+		所以「更新」通常是這三種情形之一：某語言出新版本（例如 PHP 8.6、C# 新語法）、某個網站新增頁面、或你發現既有概念頁過時／有誤。
+		你想先從哪個開始？或者我可以先跑一次「漂移偵測」——把各 raw/articles 的 sha256 跟 MANIFEST 比對，直接看出哪些原始檔自上次抓取後有變動、哪裡需要更新。要我先做這個掃描嗎？
+
+	系統現在有很多hermes profile 我想要讓那些專門在開發軟體的個體 以後在解決問題時 如果要解決問題時優先來 /home/vblinux/llm-wiki-home/PG-lib llm-wiki查詢 我要如何設定
+		技能/SOUL.md/記憶 ~ 三個地方都加上要使用PG-lib llm-wiki的提示
+		
+	現在是強制一定要先查 PG-lib才工作 這樣效率會變差吧 可否改成 在除錯時才進尋參考
+		合理，我同意——每次都強查 16,000+ 頁的 wiki 確實會拖慢常規開發。我把它改成「除錯／排解異常時優先查，語法明確的常規工作不必強行查」，並把 SOUL（8 檔）、記憶（6 檔）、技能三層一起改，避免互相打架。
+
+	
+	
 ~~~~~~~~~~~~~~~~~~~
 E:\ComfyUI_windows_portable\install_sf3d_local6.bat > E:\ComfyUI_windows_portable\build_log.txt 2>&1
 

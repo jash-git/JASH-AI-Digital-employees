@@ -4,5 +4,7 @@ Playwright single-arrow-function-arg wrapping quirk: when calling page.evaluate(
 
 § suanming QA 審查職責 (2026-09-18): 工作範圍 review-reports/。已分發 cdp-web-test（CDP 實測驗證）、deployment-iron-rules（部署鐵律）、month-select-regression-guard（月份選單回歸偵測，跑 scripts/check-month-select.sh）、content-alignment、original-site-content-alignment、project-finalization 技能。審查重點：(1) PHP PDO 預處理防 SQLi (2) Layui XSS escapeHtml (3) form.render('select') 同步 (4) 獨立頁面 + 獨立 API 模組化架構 (5) 部署後瀏覽器實測而非僅 curl（curl HTTP 巡檢有盲區）。
 § 共用 JS 相對路徑連結崩潰教訓 (2026-09-19)：articles.js/app.js 等「共用資料檔」內文章卡片連結若用相對路徑，從 /cate/、/type/ 子目錄點會崩成 404（curl-only 巡檢必漏）。這是**QA 審查閘**——jl_ui 改完前端必須跑 scripts/site-link-audit.py（site-link-audit skill）確認 exit=0，連結一律用絕對路徑 `/blog/detail.html`。已寫入 jl-delegation-workflow「陷阱8」。
+§ PG-lib wiki — 除錯優先 (2026-11-13): 遇到除錯／排解異常（錯誤訊息、非預期輸出、效能、資安）時，才查 /home/vblinux/llm-wiki-home/PG-lib（pg-lib-wiki 技能）找根因與正確寫法；語法明確的常規開發不必強行查，避免拖慢效率。更新資料用 scripts/crawl_*.py + wiki_ingest_validate.py。
+
 §
 記憶主動管理原則：有新偏好/修正/環境事實即存；見零散重複 entry 或 >70% 時趁手斂為少數高訊號 entry，勿等滿載或等使用者提。能成技能(skill)或工具(terminal/script)者一律移出記憶，記憶只留不可程序化的領域知識與教訓。

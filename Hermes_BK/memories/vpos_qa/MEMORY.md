@@ -86,5 +86,7 @@ grep -n '\\bm_xxx\\.\\|\\bm_xxx\\s*==' VPOS_Avalonia/Views/MainWindow.axaml.cs  
 4. cryptic error 的審查陷阱：錯誤訊息完全無法指出哪個 Database，QA 必須靠 grep `ConnectionStringLoad` / `OpenConn(Database` 反推呼叫點，不能只看 log。
 
 
+§ PG-lib wiki — 除錯優先 (2026-11-13): 遇到除錯／排解異常（錯誤訊息、非預期輸出、效能、資安）時，才查 /home/vblinux/llm-wiki-home/PG-lib（pg-lib-wiki 技能）找根因與正確寫法；語法明確的常規開發不必強行查，避免拖慢效率。更新資料用 scripts/crawl_*.py + wiki_ingest_validate.py。
+
 §
 記憶主動管理原則：有新偏好/修正/環境事實即存；見零散重複 entry 或 >70% 時趁手斂為少數高訊號 entry，勿等滿載或等使用者提。能成技能(skill)或工具(terminal/script)者一律移出記憶，記憶只留不可程序化的領域知識與教訓。

@@ -25,6 +25,17 @@ Sub-profiles under `/home/vblinux/.hermes/profiles/`: jl_lead, jl_php, jl_qa, jl
   - vpos-delegation-workflow → vpos_* only
   - project skills: layui-development, cdp-web-test, content-alignment, original-site-content-alignment, site-link-audit, deployment-iron-rules, month-select-regression-guard, project-finalization (jl_); concurrency-audit, hermes-backup, kanban, refactoring-qa-review, sqlite-connection-string-audit, subagent-delegation (vpos_).
 
+## Propagating a BEHAVIORAL directive across isolated profiles
+Skill-file sync (above) copies files. Making a profile actually PRIORITIZE something when solving problems is different: it needs three layers, because each alone has a gap and profiles are isolated.
+
+1. **SOUL.md (identity)** — loaded at session start as "who you are / your norms." Highest-leverage for a standing rule; it frames how the profile approaches every problem. Edit `/home/vblinux/.hermes/profiles/<p>/SOUL.md` directly and add ONE focused section (e.g. `## 參考資料優先順序`) right after its `## Profile Overview`; never rewrite existing content. Idempotent: grep for the section title before inserting so re-runs don't duplicate.
+2. **MEMORY.md (every-turn)** — injected into EVERY turn, but has a character budget and gets consolidated/pruned. Add ONE high-signal line as insurance so the rule survives even if pruned. Edit `/home/vblinux/.hermes/profiles/<p>/memories/MEMORY.md`.
+3. **skill (procedure)** — relevance-loaded by description match (not guaranteed every turn) but durable on disk; holds the "how." Install into each target profile's skills dir via `profile-sync sync` (generic) or per-family cp.
+
+**Leads are the cascade point.** jl_lead / vpos_lead are what the user directly commands; they spawn subagents with `hermes --profile <target> "..."`, and each subagent loads its OWN profile's SOUL/skill/memory. So editing a lead's SOUL to "prioritize X and make subordinates do too" propagates to all that lead dispatches — higher leverage than editing every worker. Confirm the cascade by reading the lead's SOUL for its mandatory `--profile` sub-agent invocation rule before assuming it holds.
+
+**Backup gate.** Any edit to a profile's SOUL.md / MEMORY.md / skills must be followed by `sudo /home/vblinux/Hermes_BK/backup.sh` (confirm exit 0) — an iron rule embedded in jl_lead & vpos_lead SOUL.md. The `profile-sync` tool also auto-backs up before copying.
+
 ## Tool — `profile-sync` (installed at /home/vblinux/.hermes/bin/profile-sync, on PATH)
 Run this instead of hand-writing cp loops. It classifies, copies to the right profiles, auto-backs up first, then verifies:
 - `profile-sync report` — audit which generic skills each profile is missing (read-only). Run FIRST to find gaps.
