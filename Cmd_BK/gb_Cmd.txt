@@ -96,6 +96,20 @@ daytrade_scanner工具 [台股當沖]
 	這個技能每個 profile 都要能用
 	檢查各 profile 技能是否一致
 	同步所有技能
+
+~~~~~~~~~~~~~~~~~~~
+minimax-h3-t2v [文字轉影片]
+	海島清晨，日出，海浪，5 秒，豔屏，要音 畫面大小寬度大於400的16:9 產生一影片
+
+
+minimax-h3-i2v [文字轉影片]
+	圖片使用 /media/sf_ComfyUI_windows_portable/AI 影片模型_Sulphur 2/胖胖貓頭鷹.png
+	讓胖胖貓頭鷹跳出麥克傑克森的月球漫步的舞步 5秒，要音 畫面大小只要有大於400的16:9 產生一影片
+	PS.圖片大小不合允許裁切
+
+====
+- 「豔屏」＝直式（高＞寬）
+- 「16:9」＝橫式（寬＞高）
 	
 ~~~~~~~~~~~~~~~~~~~
 view-comfyui-glb [圖片轉3D檔(glb)]
@@ -227,12 +241,12 @@ view-comfyui-glb [圖片轉3D檔(glb)]
 	https://www.w3schools.com/cs/index.php ~OK
 	https://docs.avaloniaui.net/docs/welcome ~OK
 	https://docs.python.org/3/ ~OK
-	https://www.w3schools.com/c/index.php
-	https://www.w3schools.com/cpp/default.asp
-	https://www.w3schools.com/mysql/default.asp	
-	https://www.w3schools.com/js/default.asp
-	https://www.w3schools.com/css/default.asp
-	https://www.w3schools.com/bootstrap/bootstrap_ver.asp
+	https://www.w3schools.com/c/index.php ~OK
+	https://www.w3schools.com/cpp/default.asp ~OK
+	https://www.w3schools.com/mysql/default.asp	~OK
+	https://www.w3schools.com/js/default.asp	~OK
+	https://www.w3schools.com/css/default.asp  ~OK
+	https://www.w3schools.com/bootstrap/bootstrap_ver.asp ~OK
 	閱讀上述連結 把所有的資料全部下載回來並 更新到 PG-lib wiki (/home/vblinux/llm-wiki-home/PG-lib)
 	記得在運行過程 subagent不要大於2
 	
@@ -257,6 +271,7 @@ view-comfyui-glb [圖片轉3D檔(glb)]
 ~~~~~~~~~~~~~~~~~~~
 E:\ComfyUI_windows_portable\install_sf3d_local6.bat > E:\ComfyUI_windows_portable\build_log.txt 2>&1
 
+huggingface_token:hf_Asd......BLzNBgTPZQPKYXWtbbdFHaavVNpEFHPCWe
 
 sudo rm -rf /media/sf_VM/Hermes_BK 
 sudo rsync -aL --info=progress2 /home/vblinux/Hermes_BK/ /media/sf_VM/Hermes_BK/ #簡易備份
